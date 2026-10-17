@@ -469,6 +469,18 @@
             }).join('');
         }
 
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+
         searchInput.addEventListener('input', renderRecords);
         sortSelect.addEventListener('change', renderRecords);
 
