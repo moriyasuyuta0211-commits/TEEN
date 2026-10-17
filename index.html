@@ -59,14 +59,18 @@
         }
 
         .input-group {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
+        }
+
+        .input-group:last-of-type {
+            margin-bottom: 16px;
         }
 
         .label-row {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         label {
@@ -98,11 +102,9 @@
             border-color: #ffffff;
         }
 
+        /* 星のまわりのボックスを完全に排除しフラットに */
         .star-rating-container {
-            background-color: #0d0d0d;
-            border: 1px solid #333333;
-            border-radius: 10px;
-            padding: 12px 8px 8px;
+            padding: 4px 0;
             display: flex;
             flex-direction: column;
             gap: 6px;
@@ -111,7 +113,7 @@
         .star-rating {
             display: flex;
             width: 100%;
-            justify-content: space-around;
+            justify-content: space-between;
         }
 
         .star-wrapper {
@@ -120,6 +122,7 @@
             align-items: center;
             cursor: pointer;
             flex: 1;
+            padding: 4px 0;
         }
 
         .star {
@@ -135,15 +138,15 @@
         }
 
         .star-num {
-            font-size: 10px;
-            color: #555555;
-            margin-top: 4px;
+            font-size: 11px;
+            color: #666666;
+            margin-top: 6px;
             font-weight: 600;
             user-select: none;
         }
 
         .star-wrapper.active .star-num {
-            color: #aaaaaa;
+            color: #ffffff;
         }
 
         .star-wrapper:active .star {
@@ -161,7 +164,7 @@
             font-weight: 700;
             cursor: pointer;
             transition: opacity 0.2s;
-            margin-top: 6px;
+            margin-top: 4px;
         }
 
         .btn-submit:active {
