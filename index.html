@@ -149,26 +149,18 @@
             color: #ffffff;
         }
 
-        /* 11番目（プラチナ）：他の星と完全にサイズを揃えたスマートな破線インライン枠 */
-        .star-wrapper.platinum .star-inner {
-            border: 1px dashed #737373;
-            border-radius: 4px;
-            padding: 0 2px;
-            display: inline-block;
-        }
-
+        /* 11番目（プラチナ）：他の星と完全にサイズを揃えたまま、上品なプラチナカラーに */
         .star-wrapper.platinum .star {
-            color: #666666;
-        }
-
-        .star-wrapper.platinum.active .star-inner {
-            border-color: #ffffff;
-            background: rgba(255, 255, 255, 0.08);
+            color: #71717a; /* 通常時は少し明るめのガンメタル */
         }
 
         .star-wrapper.platinum.active .star {
-            color: #f1f5f9;
-            text-shadow: 0 0 6px rgba(241, 245, 249, 0.6);
+            color: #cbd5e1; /* アクティブ時は上品なプラチナシルバーの輝き */
+            text-shadow: 0 0 8px rgba(203, 213, 225, 0.7);
+        }
+
+        .star-wrapper.platinum.active .star-num {
+            color: #cbd5e1;
         }
 
         .star-wrapper:active .star {
@@ -271,8 +263,8 @@
         }
 
         .score-badge.platinum-badge {
-            color: #f1f5f9;
-            text-shadow: 0 0 6px rgba(241, 245, 249, 0.4);
+            color: #cbd5e1;
+            text-shadow: 0 0 6px rgba(203, 213, 225, 0.5);
         }
 
         .btn-delete {
@@ -324,11 +316,8 @@
                     <div class="star-wrapper" data-value="8"><span class="star">★</span><span class="star-num">8</span></div>
                     <div class="star-wrapper" data-value="9"><span class="star">★</span><span class="star-num">9</span></div>
                     <div class="star-wrapper" data-value="10"><span class="star">★</span><span class="star-num">10</span></div>
-                    <!-- 11番目：プラチナ星（完全に高さを合わせたインライン破線枠） -->
-                    <div class="star-wrapper platinum" data-value="11">
-                        <span class="star-inner"><span class="star">★</span></span>
-                        <span class="star-num">11</span>
-                    </div>
+                    <!-- 11番目：プラチナ星（カラーと輝きで特別感を演出、サイズ完全一致） -->
+                    <div class="star-wrapper platinum" data-value="11"><span class="star">★</span><span class="star-num">11</span></div>
                 </div>
             </div>
         </div>
