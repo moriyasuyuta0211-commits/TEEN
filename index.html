@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TEN — 2人専用リアルタイム評価共有</title>
+  <title>TEN</title>
   
   <!-- アプリアイコンの設定 -->
   <link rel="icon" href="icon.png" type="image/png">
@@ -116,9 +116,9 @@
     
     .action-btn { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; text-decoration: underline; margin-top: 6px; display: inline-block; }
     
-    /* 運営バッジ・称号バッジ */
-    .admin-badge { background: rgba(245, 158, 11, 0.15); color: var(--admin-gold); border: 1px solid var(--admin-gold); font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: bold; margin-left: 4px; }
-    .title-badge { background: rgba(255, 255, 255, 0.1); color: #e5e5e5; border: 1px solid #555; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 4px; }
+    /* 運営バッジ・称号バッジ（絵文字なし） */
+    .admin-badge { background: rgba(245, 158, 11, 0.15); color: var(--admin-gold); border: 1px solid var(--admin-gold); font-size: 10px; padding: 2px 8px; border-radius: 12px; font-weight: bold; margin-left: 4px; display: inline-block; }
+    .title-badge { background: rgba(255, 255, 255, 0.08); color: #e5e5e5; border: 1px solid #444; font-size: 10px; padding: 2px 8px; border-radius: 12px; margin-left: 4px; display: inline-block; font-weight: 500; }
 
     /* モーダル */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
@@ -171,7 +171,7 @@
 
   <!-- タブナビゲーション -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('timeline')">タイムライン</button>
+    <button class="tab-btn active" onclick="switchTab('timeline')">ホーム</button>
     <button class="tab-btn" onclick="switchTab('inbox')">受信トレイ <span class="badge" id="inboxCount" style="display:none;">0</span></button>
     <button class="tab-btn" onclick="switchTab('friends')">設定・フレンド</button>
   </div>
@@ -262,7 +262,7 @@
 
     <!-- 運営専用：全ユーザー管理リスト -->
     <div id="adminAllUsersSection" style="display: none; margin-top: 24px;">
-      <label style="display: block; margin-bottom: 8px; color: var(--admin-gold); font-weight: bold;">👑 運営専用：全登録ユーザー管理（称号付与・申請・追放）</label>
+      <label style="display: block; margin-bottom: 8px; color: var(--admin-gold); font-weight: bold;">👑 運営専用：全登録ユーザー管理（称号操作・申請・追放）</label>
       <div id="adminAllUsersList"></div>
     </div>
   </div>
@@ -700,7 +700,7 @@
         <div class="card ${isAdmin ? 'is-admin-card' : ''}">
           <div>
             <strong style="color:var(--text);">${fName}</strong>
-            ${fTitle ? `<span class="title-badge">🏷️ ${fTitle}</span>` : ''}
+            ${fTitle ? `<span class="title-badge">${fTitle}</span>` : ''}
             ${isAdmin ? '<span class="admin-badge">👑 運営</span>' : ''}
             <div style="font-size:10px; color:var(--text-dim);">${fId}</div>
           </div>
@@ -729,14 +729,17 @@
           <div class="card ${isAdm ? 'is-admin-card' : ''}" style="margin-bottom: 8px; padding: 10px;">
             <div style="flex:1;">
               <strong style="color:var(--text);">${u.name || u.id}</strong>
-              ${u.customTitle ? `<span class="title-badge">🏷️ ${u.customTitle}</span>` : ''}
+              ${u.customTitle ? `<span class="title-badge">${u.customTitle}</span>` : ''}
               ${isAdm ? '<span class="admin-badge">👑 運営</span>' : ''}
               <div style="font-size:11px; color:var(--text-dim);">ID: ${u.id}</div>
               <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">最終接続: ${lastSeenDate}</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
               <button class="submit-btn" style="width: auto; padding: 3px 8px; font-size: 10px;" onclick="sendFriendRequestTo('${u.id}')">フレンド申請</button>
-              <button class="submit-btn" style="width: auto; padding: 3px 8px; font-size: 10px; background:#444; color:#fff;" onclick="setCustomTitle('${u.id}', '${u.customTitle || ''}')">称号付与</button>
+              <div style="display:flex; gap:4px;">
+                <button class="submit-btn" style="width: auto; padding: 3px 8px; font-size: 10px; background:#444; color:#fff;" onclick="setCustomTitle('${u.id}', '${u.customTitle || ''}')">称号付与</button>
+                ${u.customTitle ? `<button class="reject-btn" style="padding: 3px 8px; font-size: 10px;" onclick="revokeCustomTitle('${u.id}')">称号剥奪</button>` : ''}
+              </div>
               ${!isAdm ? `<button class="reject-btn" style="padding: 3px 8px; font-size: 10px;" onclick="kickUser('${u.id}', '${u.name || u.id}')">強制追放</button>` : ''}
             </div>
           </div>
@@ -752,6 +755,14 @@
     const userTitleRef = window.dbRef(window.db, `users/${targetId}/customTitle`);
     window.dbSet(userTitleRef, newTitle.trim()).then(() => {
       alert('称号を更新しました！');
+    });
+  }
+
+  function revokeCustomTitle(targetId) {
+    if (!confirm('このユーザーの称号を剥奪しますか？')) return;
+    const userTitleRef = window.dbRef(window.db, `users/${targetId}/customTitle`);
+    window.dbSet(userTitleRef, '').then(() => {
+      alert('称号を剥奪しました！');
     });
   }
 
@@ -892,7 +903,6 @@
           saveFriends(friends);
           renderFriends();
         }
-        // 処理済み通知をデータベースから削除
         window.dbRemove(myAcceptedRef);
       }
     });
@@ -964,7 +974,7 @@
 
     const reqHtml = reqList.map(req => {
       const fromAdminBadge = req.fromIsAdmin ? '<span class="admin-badge">👑 運営</span>' : '';
-      const titleBadge = req.fromCustomTitle ? `<span class="title-badge">🏷️ ${req.fromCustomTitle}</span>` : '';
+      const titleBadge = req.fromCustomTitle ? `<span class="title-badge">${req.fromCustomTitle}</span>` : '';
       return `
         <div class="card ${req.fromIsAdmin ? 'is-admin-card' : ''}" style="border-color: var(--gold); margin-bottom: 10px;">
           <div style="flex: 1; min-width: 0;">
@@ -1157,7 +1167,7 @@
     listEl.innerHTML = ratings.map(r => {
       const friendInfo = getFriendInfo(r.targetFriend);
       const targetNameDisplay = r.targetName || friendInfo.name || '相手';
-      const targetTitleDisplay = friendInfo.customTitle ? `<span class="title-badge">🏷️ ${friendInfo.customTitle}</span>` : '';
+      const targetTitleDisplay = friendInfo.customTitle ? `<span class="title-badge">${friendInfo.customTitle}</span>` : '';
       const targetIsAdmin = r.targetIsAdmin || friendInfo.isAdmin;
 
       let statusMeta = r.date;
