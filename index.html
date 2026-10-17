@@ -34,9 +34,9 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* ホーム内サブタブ切り替え */
-    .sub-tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
-    .sub-tab-btn { background: #000; border: 1px solid var(--border); color: var(--text-dim); padding: 6px 12px; font-size: 11px; font-weight: 600; border-radius: 20px; cursor: pointer; white-space: nowrap; }
+    /* ホーム内サブタブ（スマホでも均等に綺麗に収まるように改良） */
+    .sub-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 12px; }
+    .sub-tab-btn { background: #000; border: 1px solid var(--border); color: var(--text-dim); padding: 8px 4px; font-size: 10px; font-weight: 600; border-radius: 6px; cursor: pointer; text-align: center; white-space: nowrap; }
     .sub-tab-btn.active { background: var(--text); color: #000; border-color: var(--text); }
 
     /* フォーム */
@@ -170,12 +170,12 @@
       </div>
     </div>
 
-    <!-- ホーム内サブタブ（ステータス切り替え） -->
+    <!-- ホーム内サブタブ（スマホでも4つ綺麗に並ぶように調整） -->
     <div class="sub-tabs">
       <button class="sub-tab-btn active" onclick="setTimelineFilter('all', this)">すべて</button>
       <button class="sub-tab-btn" onclick="setTimelineFilter('complete', this)">完了済み</button>
       <button class="sub-tab-btn" onclick="setTimelineFilter('waiting', this)">⏳ 評価待ち</button>
-      <button class="sub-tab-btn" onclick="setTimelineFilter('rejected', this)">❌ 拒否された</button>
+      <button class="sub-tab-btn" onclick="setTimelineFilter('rejected', this)">❌ 拒否</button>
     </div>
 
     <!-- 検索バー ＆ 並び替えバー -->
@@ -278,7 +278,7 @@
   let myId = '';
   let myName = '';
   let selectedScore = 8;
-  let modalScore = null; // 初期値は未選択（null）
+  let modalScore = null;
   let currentInboxItem = null;
   let currentTimelineFilter = 'all';
 
@@ -702,7 +702,7 @@
     currentInboxItem = item;
     document.getElementById('modalTopicTitle').innerText = item.title ? `曲: ${item.title}` : '曲の評価';
     document.getElementById('modalMusicLinkContainer').innerHTML = getMusicLinkHtml(item.url);
-    modalScore = null; // 開いたときは未選択（null）にする
+    modalScore = null;
     document.getElementById('evalMemoInput').value = '';
     renderModalScale();
     document.getElementById('evalModal').style.display = 'flex';
