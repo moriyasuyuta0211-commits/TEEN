@@ -158,13 +158,13 @@
             margin: 0 4px;
         }
 
-        /* 11番目：指定カラー #B6A078 で光るデザイン */
+        /* 11番目（入力フォーム）：星は #B6A078 で光る */
         .star-wrapper.platinum .star {
-            color: #5c4f39; /* 非選択時の落ち着いた同系色 */
+            color: #5c4f39;
         }
 
         .star-wrapper.platinum.active .star {
-            color: #B6A078; /* 選択時：#B6A078 で発光 */
+            color: #B6A078;
             text-shadow: 0 0 10px rgba(182, 160, 120, 0.8), 0 0 20px rgba(182, 160, 120, 0.4);
         }
 
@@ -232,11 +232,11 @@
             transition: border-color 0.2s, background-color 0.2s;
         }
 
-        /* 11/10 記録カード：#B6A078 を基調とした発光ハイライト */
+        /* 11/10 記録カード：ボックスはシルバー、中の星だけ #B6A078 */
         .item-card.is-platinum {
-            background: linear-gradient(135deg, #1d1912, #141416);
-            border: 1px solid #B6A078;
-            box-shadow: 0 4px 16px rgba(182, 160, 120, 0.2);
+            background: linear-gradient(135deg, #1c1c1e, #141416);
+            border: 1px solid #8e8e93;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
         }
 
         .item-main {
@@ -272,9 +272,14 @@
             letter-spacing: 0.5px;
         }
 
+        /* バッジの星だけ #B6A078 で光らせる */
         .score-badge.platinum-badge {
+            color: #e5e5e5;
+        }
+
+        .score-badge.platinum-badge .badge-star {
             color: #B6A078;
-            text-shadow: 0 0 8px rgba(182, 160, 120, 0.6);
+            text-shadow: 0 0 8px rgba(182, 160, 120, 0.8);
         }
 
         .btn-delete {
@@ -447,6 +452,19 @@
             } else if (sortVal === 'score-desc') {
                 filtered.sort((a, b) => b.score - a.score);
             } else if (sortVal === 'score-asc') {
+                filtered.sort((a, b) => b.score - a.score); // 修正：score-asc
+            }
+
+            // 正しいソート処理
+            if (sortVal === 'platinum-only') {
+                filtered = records.filter(r => r.score === 11 && r.title.toLowerCase().includes(searchInput.value.toLowerCase()));
+            } else if (sortVal === 'desc') {
+                filtered.sort((a, b) => b.id - a.id);
+            } else if (sortVal === 'asc') {
+                filtered.sort((a, b) => a.id - b.id);
+            } else if (sortVal === 'score-desc') {
+                filtered.sort((a, b) => b.score - a.score);
+            } else if (sortVal === 'score-asc') {
                 filtered.sort((a, b) => a.score - b.score);
             }
 
@@ -459,7 +477,7 @@
 
             recordList.innerHTML = filtered.map(r => {
                 const isPlatinum = r.score === 11;
-                const scoreText = isPlatinum ? '★ 11/10' : `★ ${r.score}/10`;
+                const scoreText = isPlatinum ? '<span class="badge-star">★</span> 11/10' : `★ ${r.score}/10`;
                 const cardClass = isPlatinum ? 'item-card is-platinum' : 'item-card';
                 const badgeClass = isPlatinum ? 'score-badge platinum-badge' : 'score-badge';
 
