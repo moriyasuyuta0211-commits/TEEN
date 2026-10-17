@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TEN — 2人専用リアルタイム評価共有</title>
+  
+  <!-- アプリアイコンの設定 -->
+  <link rel="icon" href="icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="icon.png">
+
   <style>
     :root {
       --bg: #0d0d0d;
@@ -13,6 +18,8 @@
       --text-dim: #737373;
       --gold: #b6a078;
       --gold-glow: rgba(182, 160, 120, 0.25);
+      --admin-gold: #f59e0b;
+      --admin-glow: rgba(245, 158, 11, 0.3);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -23,6 +30,7 @@
     h1 { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
     
     .my-id-badge { background: #000; border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .my-id-badge.admin { border-color: var(--admin-gold); box-shadow: 0 0 8px var(--admin-glow); }
 
     /* メインタブ切り替え */
     .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
@@ -34,7 +42,7 @@
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    /* ホーム内サブタブ（スマホでも均等に綺麗に収まるように改良） */
+    /* ホーム内サブタブ */
     .sub-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 12px; }
     .sub-tab-btn { background: #000; border: 1px solid var(--border); color: var(--text-dim); padding: 8px 4px; font-size: 10px; font-weight: 600; border-radius: 6px; cursor: pointer; text-align: center; white-space: nowrap; }
     .sub-tab-btn.active { background: var(--text); color: #000; border-color: var(--text); }
@@ -79,6 +87,7 @@
     /* リスト */
     .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .card.is-platinum { border-color: rgba(182, 160, 120, 0.4); }
+    .card.is-admin-card { border-color: rgba(245, 158, 11, 0.4); }
     .card-title { font-size: 14px; font-weight: 500; margin-bottom: 2px; word-break: break-all; }
     .card-meta { font-size: 11px; color: var(--text-dim); }
     .card-scores { text-align: right; shrink: 0; white-space: nowrap; }
@@ -89,6 +98,9 @@
     .card-memo { font-size: 11px; color: var(--text-dim); margin-top: 6px; font-style: italic; }
     
     .action-btn { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; text-decoration: underline; margin-top: 6px; display: inline-block; }
+    
+    /* 運営バッジ */
+    .admin-badge { background: rgba(245, 158, 11, 0.15); color: var(--admin-gold); border: 1px solid var(--admin-gold); font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: bold; margin-left: 4px; }
 
     /* モーダル */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
@@ -132,7 +144,7 @@
     <h1>TEN</h1>
     <div style="display: flex; gap: 8px; align-items: center;">
       <button onclick="clearAllData()" style="background: none; border: 1px solid var(--border); color: var(--text-dim); border-radius: 20px; padding: 4px 8px; font-size: 11px; cursor: pointer;">データ消去 🗑️</button>
-      <div class="my-id-badge" onclick="copyMyId()">
+      <div class="my-id-badge" id="myIdBadgeElement" onclick="copyMyId()">
         <span>ID: <strong id="displayMyId">接続中...</strong></span>
         <span style="font-size: 10px; opacity: 0.7;">📋</span>
       </div>
@@ -141,7 +153,7 @@
 
   <!-- タブナビゲーション -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('timeline')">ホーム</button>
+    <button class="tab-btn active" onclick="switchTab('timeline')">タイムライン</button>
     <button class="tab-btn" onclick="switchTab('inbox')">受信トレイ <span class="badge" id="inboxCount" style="display:none;">0</span></button>
     <button class="tab-btn" onclick="switchTab('friends')">設定・フレンド</button>
   </div>
@@ -170,7 +182,7 @@
       </div>
     </div>
 
-    <!-- ホーム内サブタブ（スマホでも4つ綺麗に並ぶように調整） -->
+    <!-- ホーム内サブタブ -->
     <div class="sub-tabs">
       <button class="sub-tab-btn active" onclick="setTimelineFilter('all', this)">すべて</button>
       <button class="sub-tab-btn" onclick="setTimelineFilter('complete', this)">完了済み</button>
@@ -282,6 +294,8 @@
   let currentInboxItem = null;
   let currentTimelineFilter = 'all';
 
+  const ADMIN_ID = 'TEN-ADMIN';
+
   window.addEventListener('firebase-ready', () => {
     initMyProfile();
     renderMainScale();
@@ -300,6 +314,10 @@
     myId = storedId;
     document.getElementById('displayMyId').innerText = myId;
 
+    if (myId === ADMIN_ID) {
+      document.getElementById('myIdBadgeElement').classList.add('admin');
+    }
+
     myName = localStorage.getItem('ten_my_name') || myId;
     document.getElementById('myNameInput').value = localStorage.getItem('ten_my_name') || '';
 
@@ -312,6 +330,7 @@
     window.dbSet(userRef, {
       id: myId,
       name: myName,
+      isAdmin: (myId === ADMIN_ID),
       lastSeen: Date.now()
     });
   }
@@ -432,8 +451,12 @@
         const snapshot = await window.dbGet(userRef);
         if (snapshot.exists()) {
           const userData = snapshot.val();
-          if (userData.name && userData.name !== (typeof friends[i] === 'object' ? friends[i].name : '')) {
-            friends[i] = { id: fId, name: userData.name };
+          const fName = userData.name || fId;
+          const isAdmin = userData.isAdmin || (fId === ADMIN_ID);
+          
+          const currentStored = friends[i];
+          if (typeof currentStored !== 'object' || currentStored.name !== fName || currentStored.isAdmin !== isAdmin) {
+            friends[i] = { id: fId, name: fName, isAdmin: isAdmin };
             updated = true;
           }
         }
@@ -445,13 +468,13 @@
     }
   }
 
-  function getFriendName(fId) {
+  function getFriendInfo(fId) {
     const friends = getFriends();
     const found = friends.find(f => (typeof f === 'object' ? f.id : f) === fId);
-    if (found && typeof found === 'object' && found.name) {
-      return found.name;
+    if (found && typeof found === 'object') {
+      return { name: found.name || fId, isAdmin: found.isAdmin || (fId === ADMIN_ID) };
     }
-    return fId;
+    return { name: fId, isAdmin: (fId === ADMIN_ID) };
   }
 
   function addMyRating() {
@@ -494,12 +517,13 @@
 
       const userData = snapshot.val();
       const friendName = userData.name || fId;
+      const isAdmin = userData.isAdmin || (fId === ADMIN_ID);
 
       const friends = getFriends();
       const existing = friends.find(f => (typeof f === 'object' ? f.id : f) === fId);
       
       if (!existing) {
-        friends.push({ id: fId, name: friendName });
+        friends.push({ id: fId, name: friendName, isAdmin: isAdmin });
         saveFriends(friends);
         input.value = '';
         renderFriends();
@@ -523,10 +547,12 @@
     listEl.innerHTML = friends.map(f => {
       const fId = typeof f === 'object' ? f.id : f;
       const fName = typeof f === 'object' ? f.name : f;
+      const isAdmin = (typeof f === 'object' && f.isAdmin) || (fId === ADMIN_ID);
       return `
-        <div class="card">
+        <div class="card ${isAdmin ? 'is-admin-card' : ''}">
           <div>
             <strong style="color:var(--text);">${fName}</strong>
+            ${isAdmin ? '<span class="admin-badge">👑 運営</span>' : ''}
             <div style="font-size:10px; color:var(--text-dim);">${fId}</div>
           </div>
           <button class="action-btn" onclick="removeFriend('${fId}')">削除</button>
@@ -556,7 +582,8 @@
       select.innerHTML = friends.map(f => {
         const fId = typeof f === 'object' ? f.id : f;
         const fName = typeof f === 'object' ? f.name : f;
-        return `<option value="${fId}">${fName} (${fId})</option>`;
+        const isAdmin = (typeof f === 'object' && f.isAdmin) || (fId === ADMIN_ID);
+        return `<option value="${fId}">${fName} ${isAdmin ? '👑[運営]' : ''} (${fId})</option>`;
       }).join('');
     }
     document.getElementById('sendModal').style.display = 'flex';
@@ -573,7 +600,7 @@
     if (!title && !url) return alert('曲名/アーティスト名、または楽曲URLのいずれかを入力してください');
 
     const topicId = 'topic_' + Date.now();
-    const targetName = getFriendName(friendId);
+    const friendInfo = getFriendInfo(friendId);
     
     const ratings = getRatings();
     ratings.unshift({
@@ -585,7 +612,8 @@
       memo: '',
       status: 'waiting',
       targetFriend: friendId,
-      targetName: targetName,
+      targetName: friendInfo.name,
+      targetIsAdmin: friendInfo.isAdmin,
       timestamp: Date.now(),
       date: new Date().toISOString().split('T')[0]
     });
@@ -597,13 +625,14 @@
       title: title,
       url: url,
       fromId: myId,
-      fromName: myName
+      fromName: myName,
+      fromIsAdmin: (myId === ADMIN_ID)
     }).then(() => {
       closeModal('sendModal');
       document.getElementById('itemTitle').value = '';
       document.getElementById('itemUrl').value = '';
       renderList();
-      alert(`${targetName} さんにお題を送信しました！`);
+      alert(`${friendInfo.name} さんにお題を送信しました！`);
     });
   }
 
@@ -663,11 +692,12 @@
       countEl.style.display = 'inline-block';
       listEl.innerHTML = inboxList.map((item) => {
         const titleHtml = item.title ? `<div class="card-title">${item.title}</div>` : '';
+        const fromAdminBadge = item.fromIsAdmin ? '<span class="admin-badge">👑 運営</span>' : '';
         return `
-          <div class="card">
+          <div class="card ${item.fromIsAdmin ? 'is-admin-card' : ''}">
             <div style="flex: 1; min-width: 0;">
               ${titleHtml}
-              <div class="card-meta">差出人: ${item.fromName || item.fromId}</div>
+              <div class="card-meta">差出人: ${item.fromName || item.fromId} ${fromAdminBadge}</div>
               ${getMusicLinkHtml(item.url)}
             </div>
             <div style="display: flex; gap: 6px; flex: none; align-items: center;">
@@ -803,7 +833,10 @@
     }
 
     listEl.innerHTML = ratings.map(r => {
-      const targetNameDisplay = r.targetName || getFriendName(r.targetFriend) || '相手';
+      const friendInfo = getFriendInfo(r.targetFriend);
+      const targetNameDisplay = r.targetName || friendInfo.name || '相手';
+      const targetIsAdmin = r.targetIsAdmin || friendInfo.isAdmin;
+
       let statusMeta = r.date;
       if (r.status === 'waiting') {
         statusMeta = `<span style="color:var(--text);">⏳ ${targetNameDisplay}の評価待ち...</span>`;
@@ -812,9 +845,10 @@
       }
 
       const titleHtml = r.title ? `<div class="card-title">${r.title}</div>` : '';
+      const adminBadgeHtml = targetIsAdmin ? '<span class="admin-badge">👑 運営</span>' : '';
 
       return `
-        <div class="card ${r.myScore === 11 || r.friendScore === 11 ? 'is-platinum' : ''}">
+        <div class="card ${targetIsAdmin ? 'is-admin-card' : ''} ${r.myScore === 11 || r.friendScore === 11 ? 'is-platinum' : ''}">
           <div style="flex: 1; min-width: 0;">
             ${titleHtml}
             <div class="card-meta">${statusMeta}</div>
@@ -830,7 +864,7 @@
             ` : ''}
             ${r.friendScore !== null ? `
               <div class="friend-score ${r.friendScore === 11 ? 'platinum' : ''}">
-                ${targetNameDisplay}:${r.friendScore === 11 ? '★ 11/10' : `${r.friendScore} / 10`}
+                ${targetNameDisplay} ${adminBadgeHtml}:${r.friendScore === 11 ? '★ 11/10' : `${r.friendScore} / 10`}
               </div>
             ` : ''}
           </div>
