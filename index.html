@@ -54,21 +54,25 @@
     label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
     .score-display-text { font-size: 14px; font-weight: 700; color: #fff; }
     .score-display-text.platinum { color: var(--gold); }
+    .score-display-text.admin-max { color: var(--admin-gold); }
 
     input[type="text"], select, textarea { width: 100%; background: #000; border: 1px solid var(--border); border-radius: 6px; color: #fff; padding: 10px; font-size: 14px; resize: none; }
 
-    /* 星＋数字 UI */
-    .star-scale-row { display: flex; align-items: flex-end; justify-content: space-between; padding: 6px 0; }
-    .star-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; background: none; border: none; flex: 1; }
-    .star-icon { font-size: 18px; color: #333; transition: color 0.15s; margin-bottom: 4px; }
+    /* 星＋数字 UI（横スクロール対応） */
+    .star-scale-wrapper { overflow-x: auto; padding-bottom: 4px; }
+    .star-scale-row { display: flex; align-items: flex-end; justify-content: space-between; padding: 6px 0; min-width: max-content; gap: 2px; }
+    .star-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; background: none; border: none; padding: 0 4px; }
+    .star-icon { font-size: 16px; color: #333; transition: color 0.15s; margin-bottom: 4px; }
     .star-item.active .star-icon { color: #fff; }
     .star-item.platinum .star-icon { color: #555; }
     .star-item.platinum.active .star-icon { color: var(--gold); text-shadow: 0 0 8px var(--gold-glow); }
+    .star-item.admin-star.active .star-icon { color: var(--admin-gold); text-shadow: 0 0 8px var(--admin-glow); }
     .star-num { font-size: 10px; font-weight: 700; color: #555; }
     .star-item.active .star-num { color: var(--text-dim); }
     .star-item.platinum.active .star-num { color: var(--gold); }
+    .star-item.admin-star.active .star-num { color: var(--admin-gold); }
     
-    .divider { width: 1px; height: 28px; background: var(--border); align-self: center; margin: 0; }
+    .divider { width: 1px; height: 28px; background: var(--border); align-self: center; margin: 0 4px; }
 
     .btn-group { display: flex; gap: 8px; margin-top: 16px; }
     .submit-btn { flex: 1; background: var(--text); color: #000; font-weight: 600; border: none; border-radius: 6px; padding: 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
@@ -93,8 +97,10 @@
     .card-scores { text-align: right; shrink: 0; white-space: nowrap; }
     .card-score { font-size: 13px; font-weight: 700; color: var(--text); }
     .card-score.platinum { color: var(--gold); }
+    .card-score.admin-score { color: var(--admin-gold); }
     .friend-score { font-size: 12px; color: var(--text); margin-top: 2px; font-weight: 600; }
     .friend-score.platinum { color: var(--gold); }
+    .friend-score.admin-score { color: var(--admin-gold); }
     .card-memo { font-size: 11px; color: var(--text-dim); margin-top: 6px; font-style: italic; }
     
     .action-btn { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; text-decoration: underline; margin-top: 6px; display: inline-block; }
@@ -174,7 +180,9 @@
           <label>評価</label>
           <div class="score-display-text" id="scoreValueDisplay">8 / 10</div>
         </div>
-        <div class="star-scale-row" id="starScaleContainer"></div>
+        <div class="star-scale-wrapper">
+          <div class="star-scale-row" id="starScaleContainer"></div>
+        </div>
       </div>
       <div class="btn-group">
         <button class="submit-btn" onclick="addMyRating()">自分だけで記録</button>
@@ -214,11 +222,12 @@
   <div id="tab-friends" class="tab-content">
     <div class="input-card">
       <div class="input-group">
-        <label>自分の表示名</label>
+        <label>自分のID / 表示名を設定</label>
         <div style="display:flex; gap:8px; margin-top: 6px;">
           <input type="text" id="myNameInput" placeholder="例: たろう">
           <button class="submit-btn" style="width: 80px; flex: none; padding: 0 12px;" onclick="saveMyName()">保存</button>
         </div>
+        <div style="font-size: 10px; color: var(--text-dim); margin-top: 4px;">※「TEN-0A1Q」に設定すると運営になります</div>
       </div>
     </div>
 
@@ -272,7 +281,9 @@
       <label>評価</label>
       <div class="score-display-text" id="modalScoreValueDisplay">未選択</div>
     </div>
-    <div class="star-scale-row" id="modalStarScaleContainer" style="margin-bottom:16px;"></div>
+    <div class="star-scale-wrapper" style="margin-bottom:16px;">
+      <div class="star-scale-row" id="modalStarScaleContainer"></div>
+    </div>
 
     <div class="input-group">
       <label>メモ（感想など）</label>
@@ -294,7 +305,12 @@
   let currentInboxItem = null;
   let currentTimelineFilter = 'all';
 
-  const ADMIN_ID = 'TEN-52SN';
+  // 運営専用ID
+  const ADMIN_ID = 'TEN-0A1Q';
+
+  function isAdminUser() {
+    return myId === ADMIN_ID;
+  }
 
   window.addEventListener('firebase-ready', () => {
     initMyProfile();
@@ -314,8 +330,10 @@
     myId = storedId;
     document.getElementById('displayMyId').innerText = myId;
 
-    if (myId === ADMIN_ID) {
+    if (isAdminUser()) {
       document.getElementById('myIdBadgeElement').classList.add('admin');
+    } else {
+      document.getElementById('myIdBadgeElement').classList.remove('admin');
     }
 
     myName = localStorage.getItem('ten_my_name') || myId;
@@ -330,19 +348,32 @@
     window.dbSet(userRef, {
       id: myId,
       name: myName,
-      isAdmin: (myId === ADMIN_ID),
+      isAdmin: isAdminUser(),
       lastSeen: Date.now()
     });
   }
 
   function saveMyName() {
-    const inputName = document.getElementById('myNameInput').value.trim();
-    if (!inputName) return alert('名前を入力してください');
-    myName = inputName;
+    const inputVal = document.getElementById('myNameInput').value.trim();
+    if (!inputVal) return alert('IDまたは名前を入力してください');
+    
+    // もしユーザーが「TEN-」から始まる文字列を入力した場合、ID自体を変更可能にする
+    if (inputVal.toUpperCase().startsWith('TEN-')) {
+      myId = inputVal.toUpperCase();
+      localStorage.setItem('ten_my_id', myId);
+      document.getElementById('displayMyId').innerText = myId;
+      if (isAdminUser()) {
+        document.getElementById('myIdBadgeElement').classList.add('admin');
+      } else {
+        document.getElementById('myIdBadgeElement').classList.remove('admin');
+      }
+    }
+
+    myName = inputVal;
     localStorage.setItem('ten_my_name', myName);
     syncProfileToFirebase();
     renderList();
-    alert('表示名を保存しました！');
+    alert('設定を保存しました！');
   }
 
   function copyMyId() {
@@ -384,10 +415,15 @@
     const displayEl = document.getElementById(displayId);
     container.innerHTML = '';
 
+    const maxStars = isAdminUser() ? 20 : 11;
+
     if (currentScore === null) {
       displayEl.innerText = '未選択';
       displayEl.className = 'score-display-text';
-    } else if (currentScore === 11) {
+    } else if (isAdminUser() && currentScore === 20) {
+      displayEl.innerText = '20 / 10 (MAX)';
+      displayEl.className = 'score-display-text admin-max';
+    } else if (!isAdminUser() && currentScore === 11) {
       displayEl.innerText = '11 / 10';
       displayEl.className = 'score-display-text platinum';
     } else {
@@ -395,8 +431,12 @@
       displayEl.className = 'score-display-text';
     }
 
-    for (let i = 1; i <= 11; i++) {
-      if (i === 11) {
+    for (let i = 1; i <= maxStars; i++) {
+      if (isAdminUser() && i === 11) {
+        const div = document.createElement('div');
+        div.className = 'divider';
+        container.appendChild(div);
+      } else if (!isAdminUser() && i === 11) {
         const div = document.createElement('div');
         div.className = 'divider';
         container.appendChild(div);
@@ -405,7 +445,15 @@
       const item = document.createElement('button');
       item.type = 'button';
       const isActive = currentScore !== null && i <= currentScore;
-      item.className = `star-item ${i === 11 ? 'platinum' : ''} ${isActive ? 'active' : ''}`;
+      
+      let starClass = '';
+      if (isAdminUser() && i === 20) {
+        starClass = 'admin-star';
+      } else if (i === 11 || (isAdminUser() && i > 11)) {
+        starClass = 'platinum';
+      }
+
+      item.className = `star-item ${starClass} ${isActive ? 'active' : ''}`;
       
       item.innerHTML = `
         <span class="star-icon">★</span>
@@ -626,7 +674,7 @@
       url: url,
       fromId: myId,
       fromName: myName,
-      fromIsAdmin: (myId === ADMIN_ID)
+      fromIsAdmin: isAdminUser()
     }).then(() => {
       closeModal('sendModal');
       document.getElementById('itemTitle').value = '';
@@ -847,8 +895,14 @@
       const titleHtml = r.title ? `<div class="card-title">${r.title}</div>` : '';
       const adminBadgeHtml = targetIsAdmin ? '<span class="admin-badge">👑 運営</span>' : '';
 
+      const myScoreText = r.myScore !== null ? (r.myScore === 20 ? '★ 20/10 (MAX)' : (r.myScore === 11 ? '★ 11/10' : `${r.myScore} / 10`)) : '';
+      const myScoreClass = r.myScore === 20 ? 'admin-score' : (r.myScore === 11 ? 'platinum' : '');
+
+      const friendScoreText = r.friendScore !== null ? (r.friendScore === 20 ? '★ 20/10 (MAX)' : (r.friendScore === 11 ? '★ 11/10' : `${r.friendScore} / 10`)) : '';
+      const friendScoreClass = r.friendScore === 20 ? 'admin-score' : (r.friendScore === 11 ? 'platinum' : '');
+
       return `
-        <div class="card ${targetIsAdmin ? 'is-admin-card' : ''} ${r.myScore === 11 || r.friendScore === 11 ? 'is-platinum' : ''}">
+        <div class="card ${targetIsAdmin ? 'is-admin-card' : ''} ${r.myScore === 11 || r.friendScore === 11 || r.myScore === 20 || r.friendScore === 20 ? 'is-platinum' : ''}">
           <div style="flex: 1; min-width: 0;">
             ${titleHtml}
             <div class="card-meta">${statusMeta}</div>
@@ -858,13 +912,13 @@
           </div>
           <div class="card-scores">
             ${r.myScore !== null ? `
-              <div class="card-score ${r.myScore === 11 ? 'platinum' : ''}">
-                自分: ${r.myScore === 11 ? '★ 11/10' : `${r.myScore} / 10`}
+              <div class="card-score ${myScoreClass}">
+                自分: ${myScoreText}
               </div>
             ` : ''}
             ${r.friendScore !== null ? `
-              <div class="friend-score ${r.friendScore === 11 ? 'platinum' : ''}">
-                ${targetNameDisplay} ${adminBadgeHtml}:${r.friendScore === 11 ? '★ 11/10' : `${r.friendScore} / 10`}
+              <div class="friend-score ${friendScoreClass}">
+                ${targetNameDisplay} ${adminBadgeHtml}:${friendScoreText}
               </div>
             ` : ''}
           </div>
