@@ -149,27 +149,21 @@
             color: #ffffff;
         }
 
-        /* 11番目（プラチナ）の特別星スタイル */
-        .star-wrapper.platinum .star-box {
-            border: 1px dashed #737373;
-            border-radius: 6px;
-            padding: 3px 4px;
-            background: #1f1f23;
-        }
-
-        .star-wrapper.platinum.active .star-box {
-            border-color: #ffffff;
-            background: #333338;
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
-        }
-
+        /* 11番目（プラチナ）：他の星と完全に高さを揃えた枠付きデザイン */
         .star-wrapper.platinum .star {
+            border: 1px dashed #737373;
+            border-radius: 4px;
+            padding: 2px 3px;
+            background: #1f1f23;
             color: #777777;
         }
 
         .star-wrapper.platinum.active .star {
+            border-color: #ffffff;
+            background: #333338;
             color: #f1f5f9;
             text-shadow: 0 0 6px rgba(241, 245, 249, 0.6);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
         }
 
         .star-wrapper:active .star {
@@ -325,11 +319,8 @@
                     <div class="star-wrapper" data-value="8"><span class="star">★</span><span class="star-num">8</span></div>
                     <div class="star-wrapper" data-value="9"><span class="star">★</span><span class="star-num">9</span></div>
                     <div class="star-wrapper" data-value="10"><span class="star">★</span><span class="star-num">10</span></div>
-                    <!-- 11番目：プラチナ星 -->
-                    <div class="star-wrapper platinum" data-value="11">
-                        <div class="star-box"><span class="star">★</span></div>
-                        <span class="star-num">11</span>
-                    </div>
+                    <!-- 11番目：プラチナ星（高さを完全に統一） -->
+                    <div class="star-wrapper platinum" data-value="11"><span class="star">★</span><span class="star-num">11</span></div>
                 </div>
             </div>
         </div>
@@ -363,10 +354,8 @@
         const searchInput = document.getElementById('searchInput');
         const sortSelect = document.getElementById('sortSelect');
 
-        // 触覚フィードバック（バイブレーション）関数
         function triggerHaptic() {
             if (navigator.vibrate) {
-                // 15ミリ秒の軽い振動
                 navigator.vibrate(15);
             }
         }
@@ -402,7 +391,7 @@
         starWrappers.forEach(wrapper => {
             wrapper.addEventListener('click', () => {
                 const val = parseInt(wrapper.getAttribute('data-value'));
-                triggerHaptic(); // タップ時に触覚フィードバックを発生
+                triggerHaptic();
                 updateStars(val);
             });
         });
@@ -410,11 +399,11 @@
         saveBtn.addEventListener('click', () => {
             const title = titleInput.value.trim();
             if (!title) {
-                alert('対象名を入力してください');
+                alert('評価対象を入力してください');
                 return;
             }
 
-            triggerHaptic(); // 記録時にも軽く振動
+            triggerHaptic();
 
             const newRecord = {
                 id: Date.now(),
