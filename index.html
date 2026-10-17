@@ -158,18 +158,18 @@
             margin: 0 4px;
         }
 
-        /* 11番目（プラチナ）：上品なプラチナカラー */
+        /* 11番目：指定カラー #B6A078 で光るデザイン */
         .star-wrapper.platinum .star {
-            color: #71717a;
+            color: #5c4f39; /* 非選択時の落ち着いた同系色 */
         }
 
         .star-wrapper.platinum.active .star {
-            color: #cbd5e1;
-            text-shadow: 0 0 8px rgba(203, 213, 225, 0.7);
+            color: #B6A078; /* 選択時：#B6A078 で発光 */
+            text-shadow: 0 0 10px rgba(182, 160, 120, 0.8), 0 0 20px rgba(182, 160, 120, 0.4);
         }
 
         .star-wrapper.platinum.active .star-num {
-            color: #cbd5e1;
+            color: #B6A078;
         }
 
         .star-wrapper:active .star {
@@ -232,10 +232,11 @@
             transition: border-color 0.2s, background-color 0.2s;
         }
 
+        /* 11/10 記録カード：#B6A078 を基調とした発光ハイライト */
         .item-card.is-platinum {
-            background: linear-gradient(135deg, #1c1c1e, #141416);
-            border: 1px solid #8e8e93;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(135deg, #1d1912, #141416);
+            border: 1px solid #B6A078;
+            box-shadow: 0 4px 16px rgba(182, 160, 120, 0.2);
         }
 
         .item-main {
@@ -272,8 +273,8 @@
         }
 
         .score-badge.platinum-badge {
-            color: #cbd5e1;
-            text-shadow: 0 0 6px rgba(203, 213, 225, 0.5);
+            color: #B6A078;
+            text-shadow: 0 0 8px rgba(182, 160, 120, 0.6);
         }
 
         .btn-delete {
@@ -327,7 +328,7 @@
                     <div class="star-wrapper" data-value="10"><span class="star">★</span><span class="star-num">10</span></div>
                     <!-- 10と11の間の仕切り線 -->
                     <div class="star-divider"></div>
-                    <!-- 11番目：プラチナ星 -->
+                    <!-- 11番目：#B6A078 で光る星 -->
                     <div class="star-wrapper platinum" data-value="11"><span class="star">★</span><span class="star-num">11</span></div>
                 </div>
             </div>
