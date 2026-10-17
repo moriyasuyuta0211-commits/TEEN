@@ -95,7 +95,6 @@
     window.dbOnValue = onValue;
     window.dbRemove = remove;
     
-    // Firebase初期化完了後にアプリを起動
     window.dispatchEvent(new Event('firebase-ready'));
   </script>
 </head>
@@ -104,9 +103,12 @@
 <div class="app-container">
   <header>
     <h1>TEN</h1>
-    <div class="my-id-badge" onclick="copyMyId()">
-      <span>ID: <strong id="displayMyId">接続中...</strong></span>
-      <span style="font-size: 10px; opacity: 0.7;">📋</span>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button onclick="clearAllData()" style="background: none; border: 1px solid var(--border); color: var(--text-dim); border-radius: 20px; padding: 4px 8px; font-size: 11px; cursor: pointer;">データ消去 🗑️</button>
+      <div class="my-id-badge" onclick="copyMyId()">
+        <span>ID: <strong id="displayMyId">接続中...</strong></span>
+        <span style="font-size: 10px; opacity: 0.7;">📋</span>
+      </div>
     </div>
   </header>
 
@@ -197,7 +199,6 @@
     setupRealtimeListeners();
   });
 
-  // IDの初期化
   function initMyId() {
     let storedId = localStorage.getItem('ten_my_id');
     if (!storedId) {
@@ -248,7 +249,6 @@
   function getFriends() { return JSON.parse(localStorage.getItem('ten_friends') || '[]'); }
   function saveFriends(data) { localStorage.setItem('ten_friends', JSON.stringify(data)); }
 
-  // ローカル記録追加
   function addMyRating() {
     const title = document.getElementById('itemTitle').value.trim();
     if (!title) return alert('対象名を入力してください');
@@ -268,7 +268,6 @@
     renderList();
   }
 
-  // フレンド管理
   function addFriend() {
     const input = document.getElementById('friendIdInput');
     const fId = input.value.trim().toUpperCase();
@@ -307,7 +306,6 @@
     setupRealtimeListeners();
   }
 
-  // お題送信モーダル
   function openSendTopicModal() {
     const title = document.getElementById('itemTitle').value.trim();
     if (!title) return alert('対象名を入力してください');
@@ -326,7 +324,6 @@
 
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-  // Firebase経由でお題送信
   function sendTopicToFriend() {
     const title = document.getElementById('itemTitle').value.trim();
     const friendId = document.getElementById('friendSelect').value;
@@ -334,7 +331,6 @@
 
     const topicId = 'topic_' + Date.now();
     
-    // 自分のタイムラインに「待ち受け中」として追加
     const ratings = getRatings();
     ratings.unshift({
       id: topicId,
@@ -347,7 +343,6 @@
     });
     saveRatings(ratings);
 
-    // Firebaseの相手のInboxに書き込む
     const inboxRef = window.dbRef(window.db, `inbox/${friendId}/${topicId}`);
     window.dbSet(inboxRef, {
       topicId: topicId,
@@ -362,11 +357,9 @@
     });
   }
 
-  // リアルタイムリスナー設定
   function setupRealtimeListeners() {
     if (!myId) return;
 
-    // 1. 自分の受信トレイの監視
     const myInboxRef = window.dbRef(window.db, `inbox/${myId}`);
     window.dbOnValue(myInboxRef, (snapshot) => {
       const data = snapshot.val() || {};
@@ -374,7 +367,6 @@
       renderInbox(inboxList);
     });
 
-    // 2. 自分が出したお題に対する返信の監視
     const ratings = getRatings();
     ratings.forEach(r => {
       if (r.status === 'waiting' && r.targetFriend) {
@@ -386,7 +378,6 @@
             r.status = 'complete';
             saveRatings(ratings);
             renderList();
-            // 返信を受け取ったらFirebase側は削除
             window.dbRemove(replyRef);
           }
         });
@@ -394,7 +385,6 @@
     });
   }
 
-  // 受信トレイ描画
   function renderInbox(inboxList = []) {
     const countEl = document.getElementById('inboxCount');
     const listEl = document.getElementById('inboxList');
@@ -429,11 +419,9 @@
     renderStarScale('modalStarContainer', modalScore, (s) => { modalScore = s; renderModalStars(); });
   }
 
-  // 評価を返信する
   function submitEvaluationResponse() {
     if (!currentInboxItem) return;
 
-    // 自分のタイムラインに記録
     const ratings = getRatings();
     ratings.unshift({
       id: 'local_' + Date.now(),
@@ -445,10 +433,8 @@
     });
     saveRatings(ratings);
 
-    // 相手に返信データを送信
     const replyRef = window.dbRef(window.db, `replies/${currentInboxItem.fromId}/${currentInboxItem.topicId}`);
     window.dbSet(replyRef, { friendScore: modalScore }).then(() => {
-      // 自分の受信トレイから削除
       const inboxRef = window.dbRef(window.db, `inbox/${myId}/${currentInboxItem.topicId}`);
       window.dbRemove(inboxRef);
 
@@ -461,6 +447,13 @@
   function deleteRating(id) {
     saveRatings(getRatings().filter(r => r.id !== id));
     renderList();
+  }
+
+  function clearAllData() {
+    if (confirm('これまで記録したローカルデータをすべて消去しますか？')) {
+      localStorage.removeItem('ten_ratings');
+      location.reload();
+    }
   }
 
   function renderList() {
