@@ -149,15 +149,24 @@
             color: #ffffff;
         }
 
-        /* 11番目（プラチナ）：余計なボックスを排除し、星の文字周りにだけ直接破線を適用 */
+        /* 11番目（プラチナ）：他の星と完全にサイズを揃えたスマートな破線インライン枠 */
+        .star-wrapper.platinum .star-inner {
+            border: 1px dashed #737373;
+            border-radius: 4px;
+            padding: 0 2px;
+            display: inline-block;
+        }
+
         .star-wrapper.platinum .star {
-            outline: 1px dashed #737373;
-            outline-offset: 2px;
             color: #666666;
         }
 
+        .star-wrapper.platinum.active .star-inner {
+            border-color: #ffffff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+
         .star-wrapper.platinum.active .star {
-            outline-color: #ffffff;
             color: #f1f5f9;
             text-shadow: 0 0 6px rgba(241, 245, 249, 0.6);
         }
@@ -315,8 +324,11 @@
                     <div class="star-wrapper" data-value="8"><span class="star">★</span><span class="star-num">8</span></div>
                     <div class="star-wrapper" data-value="9"><span class="star">★</span><span class="star-num">9</span></div>
                     <div class="star-wrapper" data-value="10"><span class="star">★</span><span class="star-num">10</span></div>
-                    <!-- 11番目：プラチナ星（ボックスなしの星専用破線） -->
-                    <div class="star-wrapper platinum" data-value="11"><span class="star">★</span><span class="star-num">11</span></div>
+                    <!-- 11番目：プラチナ星（完全に高さを合わせたインライン破線枠） -->
+                    <div class="star-wrapper platinum" data-value="11">
+                        <span class="star-inner"><span class="star">★</span></span>
+                        <span class="star-num">11</span>
+                    </div>
                 </div>
             </div>
         </div>
