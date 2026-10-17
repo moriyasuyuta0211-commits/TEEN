@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TEN — 2人専用リアルタイム評価共有</title>
+  <title>TEN</title>
   
   <!-- アプリアイコンの設定 -->
   <link rel="icon" href="icon.png" type="image/png">
@@ -42,7 +42,7 @@
     .tab-btn { flex: 1; background: none; border: none; color: var(--text-dim); padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; position: relative; }
     .tab-btn.active { color: var(--text); }
     .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--text); }
-    .badge { background: var(--text); color: #000; font-size: 10px; border-radius: 10px; padding: 2px 6px; margin-left: 4px; font-weight: bold; }
+    .badge { background: #ef4444; color: #fff; font-size: 10px; border-radius: 10px; padding: 2px 6px; margin-left: 4px; font-weight: bold; }
 
     .tab-content { display: none; }
     .tab-content.active { display: block; }
@@ -171,7 +171,7 @@
 
   <!-- タブナビゲーション -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('timeline')">タイムライン</button>
+    <button class="tab-btn active" onclick="switchTab('timeline')">ホーム</button>
     <button class="tab-btn" onclick="switchTab('inbox')">受信トレイ <span class="badge" id="inboxCount" style="display:none;">0</span></button>
     <button class="tab-btn" onclick="switchTab('friends')">設定・フレンド</button>
   </div>
@@ -225,6 +225,7 @@
 
   <!-- 2. 受信トレイ -->
   <div id="tab-inbox" class="tab-content">
+    <div id="friendRequestsInboxList"></div>
     <div id="inboxList">
       <p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">届いたお題はありません</p>
     </div>
@@ -244,18 +245,24 @@
 
     <div class="input-card">
       <div class="input-group">
-        <label>友達のIDを登録</label>
+        <label>友達にフレンド申請を送る</label>
         <div style="display:flex; gap:8px; margin-top: 6px;">
           <input type="text" id="friendIdInput" placeholder="例: TEN-A8F2">
-          <button class="submit-btn" style="width: 80px; flex: none; padding: 0 12px;" onclick="addFriend()">登録</button>
+          <button class="submit-btn" style="width: 100px; flex: none; padding: 0 12px;" onclick="sendFriendRequest()">申請を送信</button>
         </div>
       </div>
     </div>
+
+    <div id="friendRequestsSection" style="margin-bottom: 20px; display: none;">
+      <label style="display: block; margin-bottom: 8px; color: var(--gold); font-weight: bold; font-size: 12px;">👥 届いているフレンド申請</label>
+      <div id="friendRequestsList"></div>
+    </div>
+
     <div id="friendsList"></div>
 
     <!-- 運営専用：全ユーザー管理リスト -->
     <div id="adminAllUsersSection" style="display: none; margin-top: 24px;">
-      <label style="display: block; margin-bottom: 8px; color: var(--admin-gold); font-weight: bold;">👑 運営専用：全登録ユーザー管理（称号付与・追放）</label>
+      <label style="display: block; margin-bottom: 8px; color: var(--admin-gold); font-weight: bold;">👑 運営専用：全登録ユーザー管理（称号付与・申請・追放）</label>
       <div id="adminAllUsersList"></div>
     </div>
   </div>
@@ -323,6 +330,9 @@
   let currentInboxItem = null;
   let currentTimelineFilter = 'all';
 
+  let currentInboxCount = 0;
+  let currentReqCount = 0;
+
   const ADMIN_ID = 'UNIN Ⅳ';
   const SECRET_KEY = 'secretadmin';
 
@@ -330,7 +340,6 @@
     return myId === ADMIN_ID;
   }
 
-  // 運営用のド派手紙吹雪演出
   function triggerAdminFireworks() {
     if (typeof confetti === 'function') {
       confetti({
@@ -598,41 +607,72 @@
     renderList();
   }
 
-  async function addFriend() {
+  // ---- フレンド申請機能 ----
+  async function sendFriendRequestTo(targetId) {
+    if (!targetId) return;
+    if (targetId === myId) return alert('自分にフレンド申請は送れません');
+
+    const friends = getFriends();
+    const existing = friends.find(f => (typeof f === 'object' ? f.id : f) === targetId);
+    if (existing) return alert('すでにフレンドに登録されています');
+
+    const targetUserRef = window.dbRef(window.db, `users/${targetId}`);
+    try {
+      const snapshot = await window.dbGet(targetUserRef);
+      if (!snapshot.exists()) return alert('該当するユーザーIDが存在しません');
+
+      const reqRef = window.dbRef(window.db, `friend_requests/${targetId}/${myId}`);
+      await window.dbSet(reqRef, {
+        fromId: myId,
+        fromName: myName,
+        fromCustomTitle: myCustomTitle || '',
+        fromIsAdmin: isAdminUser(),
+        timestamp: Date.now()
+      });
+
+      alert(`ユーザー (${targetId}) にフレンド申請を送信しました！`);
+    } catch (e) {
+      alert('通信エラーが発生しました: ' + e.message);
+    }
+  }
+
+  function sendFriendRequest() {
     const input = document.getElementById('friendIdInput');
     const fId = input.value.trim().toUpperCase();
     if (!fId) return;
-    if (fId === myId) return alert('自分のIDは登録できません');
+    sendFriendRequestTo(fId).then(() => { input.value = ''; });
+  }
 
-    const userRef = window.dbRef(window.db, `users/${fId}`);
-    try {
-      const snapshot = await window.dbGet(userRef);
-      if (!snapshot.exists()) {
-        alert('このIDは無効です。');
-        return;
-      }
-
-      const userData = snapshot.val();
-      const friendName = userData.name || fId;
-      const customTitle = userData.customTitle || '';
-      const isAdmin = userData.isAdmin || (fId === ADMIN_ID);
-
-      const friends = getFriends();
-      const existing = friends.find(f => (typeof f === 'object' ? f.id : f) === fId);
-      
-      if (!existing) {
-        friends.push({ id: fId, name: friendName, customTitle: customTitle, isAdmin: isAdmin });
-        saveFriends(friends);
-        input.value = '';
-        renderFriends();
-        alert(`フレンド (${friendName}) を登録しました！`);
-        setupRealtimeListeners();
-      } else {
-        alert('すでに登録されているフレンドです');
-      }
-    } catch (e) {
-      alert('通信エラーが発生しました。もう一度試してください。');
+  async function acceptFriendRequest(req) {
+    const friends = getFriends();
+    if (!friends.some(f => (typeof f === 'object' ? f.id : f) === req.fromId)) {
+      friends.push({
+        id: req.fromId,
+        name: req.fromName || req.fromId,
+        customTitle: req.fromCustomTitle || '',
+        isAdmin: req.fromIsAdmin || (req.fromId === ADMIN_ID)
+      });
+      saveFriends(friends);
     }
+
+    // 相手側のフレンドリストにも自分を追加（自動相互承認）
+    const targetUserRef = window.dbRef(window.db, `users/${req.fromId}`);
+    try {
+      const reqRef = window.dbRef(window.db, `friend_requests/${myId}/${req.fromId}`);
+      await window.dbRemove(reqRef);
+
+      renderFriends();
+      setupRealtimeListeners();
+      alert(`${req.fromName || req.fromId} さんとフレンドになりました！`);
+    } catch (e) {
+      alert('処理中にエラーが発生しました');
+    }
+  }
+
+  function rejectFriendRequest(fromId) {
+    if (!confirm('このフレンド申請を拒否しますか？')) return;
+    const reqRef = window.dbRef(window.db, `friend_requests/${myId}/${fromId}`);
+    window.dbRemove(reqRef);
   }
 
   function renderFriends() {
@@ -686,7 +726,8 @@
               <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">最終接続: ${lastSeenDate}</div>
             </div>
             <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
-              <button class="submit-btn" style="width: auto; padding: 3px 8px; font-size: 10px;" onclick="setCustomTitle('${u.id}', '${u.customTitle || ''}')">称号付与</button>
+              <button class="submit-btn" style="width: auto; padding: 3px 8px; font-size: 10px;" onclick="sendFriendRequestTo('${u.id}')">フレンド申請</button>
+              <button class="submit-btn" style="width: auto; padding: 3px 8px; font-size: 10px; background:#444; color:#fff;" onclick="setCustomTitle('${u.id}', '${u.customTitle || ''}')">称号付与</button>
               ${!isAdm ? `<button class="reject-btn" style="padding: 3px 8px; font-size: 10px;" onclick="kickUser('${u.id}', '${u.name || u.id}')">強制追放</button>` : ''}
             </div>
           </div>
@@ -806,10 +847,17 @@
 
     updateFriendsNamesInStorage();
 
-    // 自分の称号をリアルタイム監視
     const myTitleRef = window.dbRef(window.db, `users/${myId}/customTitle`);
     window.dbOnValue(myTitleRef, (snapshot) => {
       myCustomTitle = snapshot.val() || '';
+    });
+
+    // 届いているフレンド申請のリアルタイム監視
+    const myReqRef = window.dbRef(window.db, `friend_requests/${myId}`);
+    window.dbOnValue(myReqRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      const reqList = Object.values(data);
+      renderFriendRequests(reqList);
     });
 
     const myInboxRef = window.dbRef(window.db, `inbox/${myId}`);
@@ -842,25 +890,70 @@
     });
   }
 
-  function updateAppBadge(count) {
+  function updateTotalBadge() {
+    const total = currentInboxCount + currentReqCount;
+    const countEl = document.getElementById('inboxCount');
+    if (total > 0) {
+      countEl.innerText = total;
+      countEl.style.display = 'inline-block';
+    } else {
+      countEl.style.display = 'none';
+    }
+
     if ('setAppBadge' in navigator) {
-      if (count > 0) {
-        navigator.setAppBadge(count).catch(err => console.log(err));
+      if (total > 0) {
+        navigator.setAppBadge(total).catch(err => console.log(err));
       } else {
         navigator.clearAppBadge().catch(err => console.log(err));
       }
     }
   }
 
+  function renderFriendRequests(reqList = []) {
+    currentReqCount = reqList.length;
+    updateTotalBadge();
+
+    const inboxReqEl = document.getElementById('friendRequestsInboxList');
+    const settingsReqSection = document.getElementById('friendRequestsSection');
+    const settingsReqListEl = document.getElementById('friendRequestsList');
+
+    if (reqList.length === 0) {
+      inboxReqEl.innerHTML = '';
+      settingsReqSection.style.display = 'none';
+      return;
+    }
+
+    settingsReqSection.style.display = 'block';
+
+    const reqHtml = reqList.map(req => {
+      const fromAdminBadge = req.fromIsAdmin ? '<span class="admin-badge">👑 運営</span>' : '';
+      const titleBadge = req.fromCustomTitle ? `<span class="title-badge">🏷️ ${req.fromCustomTitle}</span>` : '';
+      return `
+        <div class="card ${req.fromIsAdmin ? 'is-admin-card' : ''}" style="border-color: var(--gold); margin-bottom: 10px;">
+          <div style="flex: 1; min-width: 0;">
+            <div class="card-title">👥 フレンド申請が届いています！</div>
+            <div class="card-meta">差出人: ${req.fromName || req.fromId} ${titleBadge} ${fromAdminBadge}</div>
+            <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">ID: ${req.fromId}</div>
+          </div>
+          <div style="display: flex; gap: 6px; flex: none; align-items: center;">
+            <button class="submit-btn" style="flex: none; width: auto; padding: 6px 12px; font-size: 12px; background: var(--gold); color: #000;" onclick='acceptFriendRequest(${JSON.stringify(req)})'>承認</button>
+            <button class="reject-btn" onclick="rejectFriendRequest('${req.fromId}')">拒否</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    inboxReqEl.innerHTML = reqHtml;
+    settingsReqListEl.innerHTML = reqHtml;
+  }
+
   function renderInbox(inboxList = []) {
-    const countEl = document.getElementById('inboxCount');
+    currentInboxCount = inboxList.length;
+    updateTotalBadge();
+
     const listEl = document.getElementById('inboxList');
 
-    updateAppBadge(inboxList.length);
-
     if (inboxList.length > 0) {
-      countEl.innerText = inboxList.length;
-      countEl.style.display = 'inline-block';
       listEl.innerHTML = inboxList.map((item) => {
         const titleHtml = item.title ? `<div class="card-title">${item.title}</div>` : '';
         const fromAdminBadge = item.fromIsAdmin ? '<span class="admin-badge">👑 運営</span>' : '';
@@ -879,7 +972,6 @@
         `;
       }).join('');
     } else {
-      countEl.style.display = 'none';
       listEl.innerHTML = '<p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">届いたお題はありません</p>';
     }
   }
