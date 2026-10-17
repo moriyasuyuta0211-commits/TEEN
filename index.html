@@ -62,12 +62,24 @@
             margin-bottom: 18px;
         }
 
+        .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
         label {
             display: block;
             font-size: 13px;
             color: #a3a3a3;
-            margin-bottom: 8px;
             font-weight: 500;
+        }
+
+        .score-display {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
         }
 
         input[type="text"] {
@@ -90,10 +102,10 @@
             background-color: #0d0d0d;
             border: 1px solid #333333;
             border-radius: 10px;
-            padding: 12px 10px;
+            padding: 12px 8px 8px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column;
+            gap: 6px;
         }
 
         .star-rating {
@@ -102,20 +114,39 @@
             justify-content: space-around;
         }
 
-        .star {
-            font-size: 26px;
+        .star-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             cursor: pointer;
-            color: #444444;
+            flex: 1;
+        }
+
+        .star {
+            font-size: 24px;
+            color: #333333;
             user-select: none;
             line-height: 1;
             transition: color 0.15s, transform 0.1s;
         }
 
-        .star.active {
+        .star-wrapper.active .star {
             color: #ffffff;
         }
 
-        .star:active {
+        .star-num {
+            font-size: 10px;
+            color: #555555;
+            margin-top: 4px;
+            font-weight: 600;
+            user-select: none;
+        }
+
+        .star-wrapper.active .star-num {
+            color: #aaaaaa;
+        }
+
+        .star-wrapper:active .star {
             transform: scale(1.2);
         }
 
@@ -240,19 +271,22 @@
         </div>
 
         <div class="input-group">
-            <label>評価</label>
+            <div class="label-row">
+                <label>評価</label>
+                <span class="score-display" id="scoreDisplay">10 / 10</span>
+            </div>
             <div class="star-rating-container">
                 <div class="star-rating" id="starRating">
-                    <span class="star" data-value="1">★</span>
-                    <span class="star" data-value="2">★</span>
-                    <span class="star" data-value="3">★</span>
-                    <span class="star" data-value="4">★</span>
-                    <span class="star" data-value="5">★</span>
-                    <span class="star" data-value="6">★</span>
-                    <span class="star" data-value="7">★</span>
-                    <span class="star" data-value="8">★</span>
-                    <span class="star" data-value="9">★</span>
-                    <span class="star" data-value="10">★</span>
+                    <div class="star-wrapper" data-value="1"><span class="star">★</span><span class="star-num">1</span></div>
+                    <div class="star-wrapper" data-value="2"><span class="star">★</span><span class="star-num">2</span></div>
+                    <div class="star-wrapper" data-value="3"><span class="star">★</span><span class="star-num">3</span></div>
+                    <div class="star-wrapper" data-value="4"><span class="star">★</span><span class="star-num">4</span></div>
+                    <div class="star-wrapper" data-value="5"><span class="star">★</span><span class="star-num">5</span></div>
+                    <div class="star-wrapper" data-value="6"><span class="star">★</span><span class="star-num">6</span></div>
+                    <div class="star-wrapper" data-value="7"><span class="star">★</span><span class="star-num">7</span></div>
+                    <div class="star-wrapper" data-value="8"><span class="star">★</span><span class="star-num">8</span></div>
+                    <div class="star-wrapper" data-value="9"><span class="star">★</span><span class="star-num">9</span></div>
+                    <div class="star-wrapper" data-value="10"><span class="star">★</span><span class="star-num">10</span></div>
                 </div>
             </div>
         </div>
@@ -277,7 +311,8 @@
         let records = JSON.parse(localStorage.getItem('ten_app_records') || '[]');
 
         const starRating = document.getElementById('starRating');
-        const stars = starRating.querySelectorAll('.star');
+        const starWrappers = starRating.querySelectorAll('.star-wrapper');
+        const scoreDisplay = document.getElementById('scoreDisplay');
         const titleInput = document.getElementById('titleInput');
         const saveBtn = document.getElementById('saveBtn');
         const recordList = document.getElementById('recordList');
@@ -287,21 +322,22 @@
 
         function updateStars(val) {
             currentScore = val;
-            stars.forEach(star => {
-                const starVal = parseInt(star.getAttribute('data-value'));
+            scoreDisplay.textContent = `${val} / 10`;
+            starWrappers.forEach(wrapper => {
+                const starVal = parseInt(wrapper.getAttribute('data-value'));
                 if (starVal <= val) {
-                    star.classList.add('active');
+                    wrapper.classList.add('active');
                 } else {
-                    star.classList.remove('active');
+                    wrapper.classList.remove('active');
                 }
             });
         }
 
         updateStars(10);
 
-        stars.forEach(star => {
-            star.addEventListener('click', () => {
-                const val = parseInt(star.getAttribute('data-value'));
+        starWrappers.forEach(wrapper => {
+            wrapper.addEventListener('click', () => {
+                const val = parseInt(wrapper.getAttribute('data-value'));
                 updateStars(val);
             });
         });
