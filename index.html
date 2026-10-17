@@ -240,6 +240,12 @@
       </div>
     </div>
     <div id="friendsList"></div>
+
+    <!-- 運営専用：全ユーザー管理リスト -->
+    <div id="adminAllUsersSection" style="display: none; margin-top: 24px;">
+      <label style="display: block; margin-bottom: 8px; color: var(--admin-gold); font-weight: bold;">👑 運営専用：全登録ユーザー一覧</label>
+      <div id="adminAllUsersList"></div>
+    </div>
   </div>
 </div>
 
@@ -304,9 +310,7 @@
   let currentInboxItem = null;
   let currentTimelineFilter = 'all';
 
-  // 運営専用ID
-  const ADMIN_ID = 'TEN-0A1Q';
-  // 運営になるための秘密の合言葉（URLに ?key=secretadmin をつけてアクセスした場合のみ運営IDが強制適用されます）
+  const ADMIN_ID = 'UNIN Ⅳ';
   const SECRET_KEY = 'secretadmin';
 
   function isAdminUser() {
@@ -319,6 +323,9 @@
     renderList();
     renderFriends();
     setupRealtimeListeners();
+    if (isAdminUser()) {
+      setupAdminAllUsersListener();
+    }
   });
 
   function initMyProfile() {
@@ -327,12 +334,10 @@
 
     let storedId = localStorage.getItem('ten_my_id');
 
-    // 秘密の鍵でアクセスした場合、運営IDを強制セット
     if (keyParam === SECRET_KEY) {
       storedId = ADMIN_ID;
       localStorage.setItem('ten_my_id', ADMIN_ID);
     } else if (!storedId || storedId === ADMIN_ID) {
-      // 通常の訪問者で、もし保存されたIDが運営IDになってしまっていたらランダムな一般IDに強制降格（一般人が勝手に運営にならないようにする）
       const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
       storedId = 'TEN-' + randomStr;
       localStorage.setItem('ten_my_id', storedId);
@@ -343,8 +348,10 @@
 
     if (isAdminUser()) {
       document.getElementById('myIdBadgeElement').classList.add('admin');
+      document.getElementById('adminAllUsersSection').style.display = 'block';
     } else {
       document.getElementById('myIdBadgeElement').classList.remove('admin');
+      document.getElementById('adminAllUsersSection').style.display = 'none';
     }
 
     myName = localStorage.getItem('ten_my_name') || myId;
@@ -606,6 +613,36 @@
         </div>
       `;
     }).join('');
+  }
+
+  function setupAdminAllUsersListener() {
+    const allUsersRef = window.dbRef(window.db, 'users');
+    window.dbOnValue(allUsersRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      const usersList = Object.values(data);
+      const listEl = document.getElementById('adminAllUsersList');
+
+      if (usersList.length === 0) {
+        listEl.innerHTML = '<p style="color:var(--text-dim); font-size:12px;">ユーザーがいません</p>';
+        return;
+      }
+
+      listEl.innerHTML = usersList.map(u => {
+        const isAdm = u.isAdmin || (u.id === ADMIN_ID);
+        const lastSeenDate = u.lastSeen ? new Date(u.lastSeen).toLocaleString() : '不明';
+        return `
+          <div class="card ${isAdm ? 'is-admin-card' : ''}" style="margin-bottom: 8px; padding: 10px;">
+            <div>
+              <strong style="color:var(--text);">${u.name || u.id}</strong>
+              ${isAdm ? '<span class="admin-badge">👑 運営</span>' : ''}
+              <div style="font-size:11px; color:var(--text-dim);">ID: ${u.id}</div>
+              <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">最終接続: ${lastSeenDate}</div>
+            </div>
+            <button class="submit-btn" style="width: auto; padding: 4px 10px; font-size: 11px;" onclick="navigator.clipboard.writeText('${u.id}'); alert('ID ${u.id} をコピーしました！');">IDをコピー</button>
+          </div>
+        `;
+      }).join('');
+    });
   }
 
   function removeFriend(fId) {
