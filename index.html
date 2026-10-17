@@ -211,6 +211,8 @@
     </div>
     <div class="star-scale-row" id="modalStarScaleContainer" style="margin-bottom:20px;"></div>
     <button class="submit-btn" onclick="submitEvaluationResponse()">評価を確定して返信</button>
+    <br>
+    <button class="action-btn" onclick="closeModal('evalModal')" style="margin-top: 10px;">キャンセル</button>
   </div>
 </div>
 
@@ -223,10 +225,7 @@
 
   window.addEventListener('firebase-ready', () => {
     initMyProfile();
-    renderStarScaleUI('starScaleContainer', 'scoreValueDisplay', selectedScore, (s) => {
-      selectedScore = s;
-      renderStarScaleUI('starScaleContainer', 'scoreValueDisplay', selectedScore, arguments.callee);
-    });
+    renderMainScale();
     renderList();
     renderFriends();
     setupRealtimeListeners();
@@ -280,13 +279,28 @@
     document.getElementById(`tab-${tabName}`).classList.add('active');
   }
 
-  // 星＋数字＋右上数値UIのレンダリング
-  function renderStarScaleUI(containerId, displayId, currentScore, onClickCallback) {
+  // メイン画面の評価スケール描画
+  function renderMainScale() {
+    renderStarScaleUI('starScaleContainer', 'scoreValueDisplay', selectedScore, (s) => {
+      selectedScore = s;
+      renderMainScale();
+    });
+  }
+
+  // モーダル画面の評価スケール描画
+  function renderModalScale() {
+    renderStarScaleUI('modalStarScaleContainer', 'modalScoreValueDisplay', modalScore, (s) => {
+      modalScore = s;
+      renderModalScale();
+    });
+  }
+
+  // 共通の星＋数字UIジェネレーター
+  function renderStarScaleUI(containerId, displayId, currentScore, onSelect) {
     const container = document.getElementById(containerId);
     const displayEl = document.getElementById(displayId);
     container.innerHTML = '';
 
-    // 右上数値表示の更新
     if (currentScore === 11) {
       displayEl.innerText = '11 / 10';
       displayEl.className = 'score-display-text platinum';
@@ -312,8 +326,7 @@
       `;
 
       item.onclick = () => {
-        onClickCallback(i);
-        renderStarScaleUI(containerId, displayId, i, onClickCallback);
+        onSelect(i);
       };
 
       container.appendChild(item);
@@ -518,9 +531,7 @@
     currentInboxItem = item;
     document.getElementById('modalTopicTitle').innerText = `お題: ${item.title}`;
     modalScore = 8;
-    renderStarScaleUI('modalStarScaleContainer', 'modalScoreValueDisplay', modalScore, (s) => {
-      modalScore = s;
-    });
+    renderModalScale();
     document.getElementById('evalModal').style.display = 'flex';
   }
 
@@ -546,6 +557,8 @@
       closeModal('evalModal');
       renderList();
       alert('評価を返信しました！');
+    }).catch((error) => {
+      alert('返信の送信に失敗しました: ' + error.message);
     });
   }
 
