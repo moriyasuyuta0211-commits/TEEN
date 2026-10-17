@@ -465,7 +465,7 @@
       displayEl.innerText = '25 / 10 (GOD)';
       displayEl.className = 'score-display-text god-max';
     } else if (isAdminUser() && currentScore === 0) {
-      displayEl.innerText = '0 / 10 (虚無)';
+      displayEl.innerText = '0 / 10';
       displayEl.className = 'score-display-text';
     } else if (isAdminUser() && currentScore >= 21) {
       displayEl.innerText = `${currentScore} / 10 (GOD)`;
@@ -1071,7 +1071,7 @@
     if (score >= 21) return `★ ${score}/10 (GOD)`;
     if (score >= 12) return `★ ${score}/10 (MAX)`;
     if (score === 11) return '★ 11/10';
-    if (score === 0) return '💀 0/10 (虚無)';
+    if (score === 0) return '💀 0/10';
     return `${score} / 10`;
   }
 
