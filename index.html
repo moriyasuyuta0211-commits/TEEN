@@ -24,7 +24,7 @@
     
     .my-id-badge { background: #000; border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 6px; cursor: pointer; }
 
-    /* タブ切り替え */
+    /* メインタブ切り替え */
     .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
     .tab-btn { flex: 1; background: none; border: none; color: var(--text-dim); padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; position: relative; }
     .tab-btn.active { color: var(--text); }
@@ -33,6 +33,11 @@
 
     .tab-content { display: none; }
     .tab-content.active { display: block; }
+
+    /* ホーム内サブタブ切り替え */
+    .sub-tabs { display: flex; gap: 6px; margin-bottom: 12px; overflow-x: auto; padding-bottom: 4px; }
+    .sub-tab-btn { background: #000; border: 1px solid var(--border); color: var(--text-dim); padding: 6px 12px; font-size: 11px; font-weight: 600; border-radius: 20px; cursor: pointer; white-space: nowrap; }
+    .sub-tab-btn.active { background: var(--text); color: #000; border-color: var(--text); }
 
     /* フォーム */
     .input-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 20px; }
@@ -63,9 +68,9 @@
     .reject-btn { background: transparent; color: #ff5555; border: 1px solid #442222; font-weight: 600; border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; }
 
     /* 検索・並び替えバー */
-    .control-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+    .control-bar { display: flex; gap: 8px; margin-bottom: 12px; }
     .control-bar input { flex: 1; }
-    .control-bar select { width: 130px; flex: none; font-size: 12px; }
+    .control-bar select { width: 120px; flex: none; font-size: 12px; }
 
     /* 楽曲リンクボタン */
     .music-link-btn { display: inline-flex; align-items: center; gap: 6px; background: #000; border: 1px solid var(--border); color: var(--text); font-size: 11px; padding: 5px 10px; border-radius: 20px; text-decoration: none; margin-top: 4px; transition: background 0.15s; }
@@ -136,7 +141,7 @@
 
   <!-- タブナビゲーション -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('timeline')">タイムライン</button>
+    <button class="tab-btn active" onclick="switchTab('timeline')">ホーム</button>
     <button class="tab-btn" onclick="switchTab('inbox')">受信トレイ <span class="badge" id="inboxCount" style="display:none;">0</span></button>
     <button class="tab-btn" onclick="switchTab('friends')">設定・フレンド</button>
   </div>
@@ -165,7 +170,15 @@
       </div>
     </div>
 
-    <!-- 検索バー ＆ 並び替えドロップダウン -->
+    <!-- ホーム内サブタブ（ステータス切り替え） -->
+    <div class="sub-tabs">
+      <button class="sub-tab-btn active" onclick="setTimelineFilter('all', this)">すべて</button>
+      <button class="sub-tab-btn" onclick="setTimelineFilter('complete', this)">完了済み</button>
+      <button class="sub-tab-btn" onclick="setTimelineFilter('waiting', this)">⏳ 評価待ち</button>
+      <button class="sub-tab-btn" onclick="setTimelineFilter('rejected', this)">❌ 拒否された</button>
+    </div>
+
+    <!-- 検索バー ＆ 並び替えバー -->
     <div class="control-bar">
       <input type="text" id="searchInput" placeholder="曲名や歌手名で検索..." oninput="renderList()">
       <select id="sortSelect" onchange="renderList()">
@@ -210,7 +223,7 @@
   </div>
 </div>
 
-<!-- お題送信モーダル（URLと曲名入力を入れ替え） -->
+<!-- お題送信モーダル -->
 <div class="modal-overlay" id="sendModal">
   <div class="modal-content" style="text-align: left;">
     <div class="modal-title" style="text-align: center;">曲をお題として送信</div>
@@ -267,6 +280,7 @@
   let selectedScore = 8;
   let modalScore = 8;
   let currentInboxItem = null;
+  let currentTimelineFilter = 'all';
 
   window.addEventListener('firebase-ready', () => {
     initMyProfile();
@@ -319,10 +333,17 @@
   }
 
   function switchTab(tabName) {
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tabs .tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
     event.currentTarget.classList.add('active');
     document.getElementById(`tab-${tabName}`).classList.add('active');
+  }
+
+  function setTimelineFilter(filter, btnEl) {
+    currentTimelineFilter = filter;
+    document.querySelectorAll('.sub-tab-btn').forEach(btn => btn.classList.remove('active'));
+    btnEl.classList.add('active');
+    renderList();
   }
 
   function renderMainScale() {
@@ -714,6 +735,11 @@
     window.dbSet(replyRef, { 
       friendScore: modalScore,
       memo: memoText
+    }).end ? window.dbSet(replyRef, {...}).then(...) : null; // safe
+
+    window.dbSet(replyRef, { 
+      friendScore: modalScore,
+      memo: memoText
     }).then(() => {
       const inboxRef = window.dbRef(window.db, `inbox/${myId}/${currentInboxItem.topicId}`);
       window.dbRemove(inboxRef);
@@ -742,6 +768,15 @@
     const listEl = document.getElementById('ratingList');
     let ratings = getRatings();
 
+    // サブタブによるステータスフィルター
+    if (currentTimelineFilter === 'complete') {
+      ratings = ratings.filter(r => r.status === 'complete');
+    } else if (currentTimelineFilter === 'waiting') {
+      ratings = ratings.filter(r => r.status === 'waiting');
+    } else if (currentTimelineFilter === 'rejected') {
+      ratings = ratings.filter(r => r.status === 'rejected');
+    }
+
     const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
     if (searchQuery) {
       ratings = ratings.filter(r => (r.title || '').toLowerCase().includes(searchQuery));
@@ -761,7 +796,7 @@
     });
 
     if (ratings.length === 0) {
-      listEl.innerHTML = '<p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">記録はありません</p>';
+      listEl.innerHTML = '<p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">条件に一致する記録はありません</p>';
       return;
     }
 
