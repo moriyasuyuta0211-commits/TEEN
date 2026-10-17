@@ -68,7 +68,7 @@
     .control-bar select { width: 130px; flex: none; font-size: 12px; }
 
     /* 楽曲リンクボタン */
-    .music-link-btn { display: inline-flex; align-items: center; gap: 6px; background: #000; border: 1px solid var(--border); color: var(--text); font-size: 11px; padding: 5px 10px; border-radius: 20px; text-decoration: none; margin-top: 6px; transition: background 0.15s; }
+    .music-link-btn { display: inline-flex; align-items: center; gap: 6px; background: #000; border: 1px solid var(--border); color: var(--text); font-size: 11px; padding: 5px 10px; border-radius: 20px; text-decoration: none; margin-top: 4px; transition: background 0.15s; }
     .music-link-btn:hover { background: #222; }
 
     /* リスト */
@@ -136,7 +136,7 @@
 
   <!-- タブナビゲーション -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('timeline')">ホーム</button>
+    <button class="tab-btn active" onclick="switchTab('timeline')">タイムライン</button>
     <button class="tab-btn" onclick="switchTab('inbox')">受信トレイ <span class="badge" id="inboxCount" style="display:none;">0</span></button>
     <button class="tab-btn" onclick="switchTab('friends')">設定・フレンド</button>
   </div>
@@ -308,18 +308,7 @@
     myName = inputName;
     localStorage.setItem('ten_my_name', myName);
     syncProfileToFirebase();
-
-    // 自分の名前が変わったとき、登録してくれている友達のローカルリスト等も更新できるようにする
-    // 保存されている既存のお題やタイムラインのターゲット名も最新名に反映させる
-    const ratings = getRatings();
-    ratings.forEach(r => {
-      if (r.targetName) {
-        // 必要に応じて更新
-      }
-    });
-    saveRatings(ratings);
     renderList();
-
     alert('表示名を保存しました！');
   }
 
@@ -408,7 +397,6 @@
   function getFriends() { return JSON.parse(localStorage.getItem('ten_friends') || '[]'); }
   function saveFriends(data) { localStorage.setItem('ten_friends', JSON.stringify(data)); }
 
-  // リアルタイムでFirebaseからフレンドの最新名を取得して反映する関数
   async function updateFriendsNamesInStorage() {
     const friends = getFriends();
     let updated = false;
@@ -446,12 +434,10 @@
     const url = document.getElementById('itemUrl').value.trim();
     if (!title && !url) return alert('曲名/アーティスト名、または楽曲URLのいずれかを入力してください');
 
-    const displayTitle = title || url;
-
     const ratings = getRatings();
     ratings.unshift({
       id: 'local_' + Date.now(),
-      title: displayTitle,
+      title: title,
       url: url,
       myScore: selectedScore,
       friendScore: null,
@@ -532,7 +518,7 @@
   }
 
   function openSendTopicModal() {
-    updateFriendsNamesInStorage(); // モーダルを開いた時にフレンドの名前を最新に同期
+    updateFriendsNamesInStorage();
     const friends = getFriends();
     const select = document.getElementById('friendSelect');
     
@@ -561,14 +547,13 @@
     const url = document.getElementById('sendTopicUrlInput').value.trim();
     if (!title && !url) return alert('曲名/アーティスト名、または楽曲URLのいずれかを入力してください');
 
-    const displayTitle = title || url;
     const topicId = 'topic_' + Date.now();
     const targetName = getFriendName(friendId);
     
     const ratings = getRatings();
     ratings.unshift({
       id: topicId,
-      title: displayTitle,
+      title: title,
       url: url,
       myScore: null,
       friendScore: null,
@@ -584,10 +569,10 @@
     const inboxRef = window.dbRef(window.db, `inbox/${friendId}/${topicId}`);
     window.dbSet(inboxRef, {
       topicId: topicId,
-      title: displayTitle,
+      title: title,
       url: url,
       fromId: myId,
-      fromName: myName // 送信時点の自分の最新の名前を格納
+      fromName: myName
     }).then(() => {
       closeModal('sendModal');
       document.getElementById('itemTitle').value = '';
@@ -600,7 +585,6 @@
   function setupRealtimeListeners() {
     if (!myId) return;
 
-    // 起動時および変更時にフレンド名も自動同期
     updateFriendsNamesInStorage();
 
     const myInboxRef = window.dbRef(window.db, `inbox/${myId}`);
@@ -633,26 +617,42 @@
     });
   }
 
+  function updateAppBadge(count) {
+    if ('setAppBadge' in navigator) {
+      if (count > 0) {
+        navigator.setAppBadge(count).catch(err => console.log(err));
+      } else {
+        navigator.clearAppBadge().catch(err => console.log(err));
+      }
+    }
+  }
+
   function renderInbox(inboxList = []) {
     const countEl = document.getElementById('inboxCount');
     const listEl = document.getElementById('inboxList');
 
+    // アプリのアイコンバッジを更新
+    updateAppBadge(inboxList.length);
+
     if (inboxList.length > 0) {
       countEl.innerText = inboxList.length;
       countEl.style.display = 'inline-block';
-      listEl.innerHTML = inboxList.map((item) => `
-        <div class="card">
-          <div style="flex: 1; min-width: 0;">
-            <div class="card-title">${item.title}</div>
-            <div class="card-meta">差出人: ${item.fromName || item.fromId}</div>
-            ${getMusicLinkHtml(item.url)}
+      listEl.innerHTML = inboxList.map((item) => {
+        const titleHtml = item.title ? `<div class="card-title">${item.title}</div>` : '';
+        return `
+          <div class="card">
+            <div style="flex: 1; min-width: 0;">
+              ${titleHtml}
+              <div class="card-meta">差出人: ${item.fromName || item.fromId}</div>
+              ${getMusicLinkHtml(item.url)}
+            </div>
+            <div style="display: flex; gap: 6px; flex: none; align-items: center;">
+              <button class="submit-btn" style="flex: none; width: auto; padding: 6px 14px; font-size: 12px;" onclick='openEvalModal(${JSON.stringify(item)})'>評価する</button>
+              <button class="reject-btn" onclick='rejectInboxItem(${JSON.stringify(item)})'>拒否</button>
+            </div>
           </div>
-          <div style="display: flex; gap: 6px; flex: none; align-items: center;">
-            <button class="submit-btn" style="flex: none; width: auto; padding: 6px 14px; font-size: 12px;" onclick='openEvalModal(${JSON.stringify(item)})'>評価する</button>
-            <button class="reject-btn" onclick='rejectInboxItem(${JSON.stringify(item)})'>拒否</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     } else {
       countEl.style.display = 'none';
       listEl.innerHTML = '<p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">届いたお題はありません</p>';
@@ -660,7 +660,7 @@
   }
 
   function rejectInboxItem(item) {
-    if (!confirm(`「${item.title}」のお題を拒否しますか？`)) return;
+    if (!confirm('このお題を拒否しますか？')) return;
 
     const replyRef = window.dbRef(window.db, `replies/${item.fromId}/${item.topicId}`);
     window.dbSet(replyRef, { 
@@ -676,7 +676,7 @@
 
   function openEvalModal(item) {
     currentInboxItem = item;
-    document.getElementById('modalTopicTitle').innerText = `曲: ${item.title}`;
+    document.getElementById('modalTopicTitle').innerText = item.title ? `曲: ${item.title}` : '曲の評価';
     document.getElementById('modalMusicLinkContainer').innerHTML = getMusicLinkHtml(item.url);
     modalScore = 8;
     document.getElementById('evalMemoInput').value = '';
@@ -699,7 +699,7 @@
     } else {
       ratings.unshift({
         id: currentInboxItem.topicId,
-        title: currentInboxItem.title,
+        title: currentInboxItem.title || '',
         url: currentInboxItem.url || '',
         myScore: modalScore,
         friendScore: null,
@@ -745,7 +745,7 @@
 
     const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
     if (searchQuery) {
-      ratings = ratings.filter(r => r.title.toLowerCase().includes(searchQuery));
+      ratings = ratings.filter(r => (r.title || '').toLowerCase().includes(searchQuery));
     }
 
     const sortType = document.getElementById('sortSelect').value;
@@ -757,7 +757,7 @@
       } else if (sortType === 'highest') {
         const scoreA = Math.max(a.myScore || 0, a.friendScore || 0);
         const scoreB = Math.max(b.myScore || 0, b.friendScore || 0);
-        return scoreB - scoreB;
+        return scoreB - scoreA;
       }
     });
 
@@ -775,10 +775,12 @@
         statusMeta = `<span style="color:#ff5555;">❌ ${targetNameDisplay}に拒否されました</span>`;
       }
 
+      const titleHtml = r.title ? `<div class="card-title">${r.title}</div>` : '';
+
       return `
         <div class="card ${r.myScore === 11 || r.friendScore === 11 ? 'is-platinum' : ''}">
           <div style="flex: 1; min-width: 0;">
-            <div class="card-title">${r.title}</div>
+            ${titleHtml}
             <div class="card-meta">${statusMeta}</div>
             ${getMusicLinkHtml(r.url)}
             ${r.memo ? `<div class="card-memo">“${r.memo}”</div>` : ''}
