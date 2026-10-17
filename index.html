@@ -9,6 +9,9 @@
   <link rel="icon" href="icon.png" type="image/png">
   <link rel="apple-touch-icon" href="icon.png">
 
+  <!-- 紙吹雪ライブラリ (canvas-confetti) -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
   <style>
     :root {
       --bg: #0d0d0d;
@@ -20,6 +23,8 @@
       --gold-glow: rgba(182, 160, 120, 0.25);
       --admin-gold: #f59e0b;
       --admin-glow: rgba(245, 158, 11, 0.3);
+      --god-gold: #fbbf24;
+      --god-glow: rgba(251, 191, 36, 0.6);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -55,24 +60,27 @@
     .score-display-text { font-size: 14px; font-weight: 700; color: #fff; }
     .score-display-text.platinum { color: var(--gold); }
     .score-display-text.admin-max { color: var(--admin-gold); }
+    .score-display-text.god-max { color: var(--god-gold); text-shadow: 0 0 10px var(--god-glow); }
 
     input[type="text"], select, textarea { width: 100%; background: #000; border: 1px solid var(--border); border-radius: 6px; color: #fff; padding: 10px; font-size: 14px; resize: none; }
 
     /* 星＋数字 UI（横スクロール対応） */
     .star-scale-wrapper { overflow-x: auto; padding-bottom: 4px; }
     .star-scale-row { display: flex; align-items: flex-end; justify-content: space-between; padding: 6px 0; min-width: max-content; gap: 2px; }
-    .star-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; background: none; border: none; padding: 0 4px; }
-    .star-icon { font-size: 16px; color: #333; transition: color 0.15s; margin-bottom: 4px; }
+    .star-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; background: none; border: none; padding: 0 3px; }
+    .star-icon { font-size: 15px; color: #333; transition: color 0.15s; margin-bottom: 4px; }
     .star-item.active .star-icon { color: #fff; }
     .star-item.platinum .star-icon { color: #555; }
     .star-item.platinum.active .star-icon { color: var(--gold); text-shadow: 0 0 8px var(--gold-glow); }
     .star-item.admin-star.active .star-icon { color: var(--admin-gold); text-shadow: 0 0 8px var(--admin-glow); }
-    .star-num { font-size: 10px; font-weight: 700; color: #555; }
+    .star-item.god-star.active .star-icon { color: var(--god-gold); text-shadow: 0 0 12px var(--god-glow); }
+    .star-num { font-size: 9px; font-weight: 700; color: #555; }
     .star-item.active .star-num { color: var(--text-dim); }
     .star-item.platinum.active .star-num { color: var(--gold); }
     .star-item.admin-star.active .star-num { color: var(--admin-gold); }
+    .star-item.god-star.active .star-num { color: var(--god-gold); }
     
-    .divider { width: 1px; height: 28px; background: var(--border); align-self: center; margin: 0 4px; }
+    .divider { width: 1px; height: 28px; background: var(--border); align-self: center; margin: 0 3px; }
 
     .btn-group { display: flex; gap: 8px; margin-top: 16px; }
     .submit-btn { flex: 1; background: var(--text); color: #000; font-weight: 600; border: none; border-radius: 6px; padding: 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
@@ -92,21 +100,25 @@
     .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 12px; }
     .card.is-platinum { border-color: rgba(182, 160, 120, 0.4); }
     .card.is-admin-card { border-color: rgba(245, 158, 11, 0.4); }
+    .card.is-god-card { border-color: rgba(251, 191, 36, 0.8); box-shadow: 0 0 10px rgba(251, 191, 36, 0.2); }
     .card-title { font-size: 14px; font-weight: 500; margin-bottom: 2px; word-break: break-all; }
     .card-meta { font-size: 11px; color: var(--text-dim); }
     .card-scores { text-align: right; shrink: 0; white-space: nowrap; }
     .card-score { font-size: 13px; font-weight: 700; color: var(--text); }
     .card-score.platinum { color: var(--gold); }
     .card-score.admin-score { color: var(--admin-gold); }
+    .card-score.god-score { color: var(--god-gold); text-shadow: 0 0 8px var(--god-glow); }
     .friend-score { font-size: 12px; color: var(--text); margin-top: 2px; font-weight: 600; }
     .friend-score.platinum { color: var(--gold); }
     .friend-score.admin-score { color: var(--admin-gold); }
+    .friend-score.god-score { color: var(--god-gold); text-shadow: 0 0 8px var(--god-glow); }
     .card-memo { font-size: 11px; color: var(--text-dim); margin-top: 6px; font-style: italic; }
     
     .action-btn { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; text-decoration: underline; margin-top: 6px; display: inline-block; }
     
-    /* 運営バッジ */
+    /* 運営バッジ・称号バッジ */
     .admin-badge { background: rgba(245, 158, 11, 0.15); color: var(--admin-gold); border: 1px solid var(--admin-gold); font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: bold; margin-left: 4px; }
+    .title-badge { background: rgba(255, 255, 255, 0.1); color: #e5e5e5; border: 1px solid #555; font-size: 10px; padding: 1px 6px; border-radius: 10px; margin-left: 4px; }
 
     /* モーダル */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
@@ -243,7 +255,7 @@
 
     <!-- 運営専用：全ユーザー管理リスト -->
     <div id="adminAllUsersSection" style="display: none; margin-top: 24px;">
-      <label style="display: block; margin-bottom: 8px; color: var(--admin-gold); font-weight: bold;">👑 運営専用：全登録ユーザー一覧</label>
+      <label style="display: block; margin-bottom: 8px; color: var(--admin-gold); font-weight: bold;">👑 運営専用：全登録ユーザー管理（称号付与・追放）</label>
       <div id="adminAllUsersList"></div>
     </div>
   </div>
@@ -305,6 +317,7 @@
 <script>
   let myId = '';
   let myName = '';
+  let myCustomTitle = '';
   let selectedScore = 8;
   let modalScore = null;
   let currentInboxItem = null;
@@ -315,6 +328,17 @@
 
   function isAdminUser() {
     return myId === ADMIN_ID;
+  }
+
+  // 運営用のド派手紙吹雪演出
+  function triggerAdminFireworks() {
+    if (typeof confetti === 'function') {
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 }
+      });
+    }
   }
 
   window.addEventListener('firebase-ready', () => {
@@ -366,6 +390,7 @@
     window.dbSet(userRef, {
       id: myId,
       name: myName,
+      customTitle: myCustomTitle || '',
       isAdmin: isAdminUser(),
       lastSeen: Date.now()
     });
@@ -421,13 +446,23 @@
     const displayEl = document.getElementById(displayId);
     container.innerHTML = '';
 
-    const maxStars = isAdminUser() ? 20 : 11;
+    const minStars = isAdminUser() ? 0 : 1;
+    const maxStars = isAdminUser() ? 25 : 11;
 
     if (currentScore === null) {
       displayEl.innerText = '未選択';
       displayEl.className = 'score-display-text';
-    } else if (isAdminUser() && currentScore === 20) {
-      displayEl.innerText = '20 / 10 (MAX)';
+    } else if (isAdminUser() && currentScore === 25) {
+      displayEl.innerText = '25 / 10 (GOD)';
+      displayEl.className = 'score-display-text god-max';
+    } else if (isAdminUser() && currentScore === 0) {
+      displayEl.innerText = '0 / 10 (虚無)';
+      displayEl.className = 'score-display-text';
+    } else if (isAdminUser() && currentScore >= 21) {
+      displayEl.innerText = `${currentScore} / 10 (GOD)`;
+      displayEl.className = 'score-display-text god-max';
+    } else if (isAdminUser() && currentScore >= 12) {
+      displayEl.innerText = `${currentScore} / 10 (MAX)`;
       displayEl.className = 'score-display-text admin-max';
     } else if (!isAdminUser() && currentScore === 11) {
       displayEl.innerText = '11 / 10';
@@ -437,8 +472,8 @@
       displayEl.className = 'score-display-text';
     }
 
-    for (let i = 1; i <= maxStars; i++) {
-      if (isAdminUser() && i === 11) {
+    for (let i = minStars; i <= maxStars; i++) {
+      if (isAdminUser() && (i === 11 || i === 21)) {
         const div = document.createElement('div');
         div.className = 'divider';
         container.appendChild(div);
@@ -450,19 +485,21 @@
 
       const item = document.createElement('button');
       item.type = 'button';
-      const isActive = currentScore !== null && i <= currentScore;
+      const isActive = currentScore !== null && (currentScore === 0 ? i === 0 : (i > 0 && i <= currentScore));
       
       let starClass = '';
-      if (isAdminUser() && i === 20) {
+      if (isAdminUser() && i >= 21) {
+        starClass = 'god-star';
+      } else if (isAdminUser() && i >= 12) {
         starClass = 'admin-star';
-      } else if (i === 11 || (isAdminUser() && i > 11)) {
+      } else if (i === 11) {
         starClass = 'platinum';
       }
 
       item.className = `star-item ${starClass} ${isActive ? 'active' : ''}`;
       
       item.innerHTML = `
-        <span class="star-icon">★</span>
+        <span class="star-icon">${i === 0 ? '💀' : '★'}</span>
         <span class="star-num">${i}</span>
       `;
 
@@ -506,11 +543,12 @@
         if (snapshot.exists()) {
           const userData = snapshot.val();
           const fName = userData.name || fId;
+          const customTitle = userData.customTitle || '';
           const isAdmin = userData.isAdmin || (fId === ADMIN_ID);
           
           const currentStored = friends[i];
-          if (typeof currentStored !== 'object' || currentStored.name !== fName || currentStored.isAdmin !== isAdmin) {
-            friends[i] = { id: fId, name: fName, isAdmin: isAdmin };
+          if (typeof currentStored !== 'object' || currentStored.name !== fName || currentStored.customTitle !== customTitle || currentStored.isAdmin !== isAdmin) {
+            friends[i] = { id: fId, name: fName, customTitle: customTitle, isAdmin: isAdmin };
             updated = true;
           }
         }
@@ -526,9 +564,9 @@
     const friends = getFriends();
     const found = friends.find(f => (typeof f === 'object' ? f.id : f) === fId);
     if (found && typeof found === 'object') {
-      return { name: found.name || fId, isAdmin: found.isAdmin || (fId === ADMIN_ID) };
+      return { name: found.name || fId, customTitle: found.customTitle || '', isAdmin: found.isAdmin || (fId === ADMIN_ID) };
     }
-    return { name: fId, isAdmin: (fId === ADMIN_ID) };
+    return { name: fId, customTitle: '', isAdmin: (fId === ADMIN_ID) };
   }
 
   function addMyRating() {
@@ -552,6 +590,11 @@
     saveRatings(ratings);
     document.getElementById('itemTitle').value = '';
     document.getElementById('itemUrl').value = '';
+    
+    if (isAdminUser()) {
+      triggerAdminFireworks();
+    }
+
     renderList();
   }
 
@@ -571,13 +614,14 @@
 
       const userData = snapshot.val();
       const friendName = userData.name || fId;
+      const customTitle = userData.customTitle || '';
       const isAdmin = userData.isAdmin || (fId === ADMIN_ID);
 
       const friends = getFriends();
       const existing = friends.find(f => (typeof f === 'object' ? f.id : f) === fId);
       
       if (!existing) {
-        friends.push({ id: fId, name: friendName, isAdmin: isAdmin });
+        friends.push({ id: fId, name: friendName, customTitle: customTitle, isAdmin: isAdmin });
         saveFriends(friends);
         input.value = '';
         renderFriends();
@@ -601,11 +645,13 @@
     listEl.innerHTML = friends.map(f => {
       const fId = typeof f === 'object' ? f.id : f;
       const fName = typeof f === 'object' ? f.name : f;
+      const fTitle = typeof f === 'object' ? f.customTitle : '';
       const isAdmin = (typeof f === 'object' && f.isAdmin) || (fId === ADMIN_ID);
       return `
         <div class="card ${isAdmin ? 'is-admin-card' : ''}">
           <div>
             <strong style="color:var(--text);">${fName}</strong>
+            ${fTitle ? `<span class="title-badge">🏷️ ${fTitle}</span>` : ''}
             ${isAdmin ? '<span class="admin-badge">👑 運営</span>' : ''}
             <div style="font-size:10px; color:var(--text-dim);">${fId}</div>
           </div>
@@ -632,16 +678,46 @@
         const lastSeenDate = u.lastSeen ? new Date(u.lastSeen).toLocaleString() : '不明';
         return `
           <div class="card ${isAdm ? 'is-admin-card' : ''}" style="margin-bottom: 8px; padding: 10px;">
-            <div>
+            <div style="flex:1;">
               <strong style="color:var(--text);">${u.name || u.id}</strong>
+              ${u.customTitle ? `<span class="title-badge">🏷️ ${u.customTitle}</span>` : ''}
               ${isAdm ? '<span class="admin-badge">👑 運営</span>' : ''}
               <div style="font-size:11px; color:var(--text-dim);">ID: ${u.id}</div>
               <div style="font-size:10px; color:var(--text-dim); margin-top:2px;">最終接続: ${lastSeenDate}</div>
             </div>
-            <button class="submit-btn" style="width: auto; padding: 4px 10px; font-size: 11px;" onclick="navigator.clipboard.writeText('${u.id}'); alert('ID ${u.id} をコピーしました！');">IDをコピー</button>
+            <div style="display:flex; flex-direction:column; gap:4px; align-items:flex-end;">
+              <button class="submit-btn" style="width: auto; padding: 3px 8px; font-size: 10px;" onclick="setCustomTitle('${u.id}', '${u.customTitle || ''}')">称号付与</button>
+              ${!isAdm ? `<button class="reject-btn" style="padding: 3px 8px; font-size: 10px;" onclick="kickUser('${u.id}', '${u.name || u.id}')">強制追放</button>` : ''}
+            </div>
           </div>
         `;
       }).join('');
+    });
+  }
+
+  function setCustomTitle(targetId, currentTitle) {
+    const newTitle = prompt('ユーザーに授与する称号を入力してください (空欄で解除):', currentTitle);
+    if (newTitle === null) return;
+
+    const userTitleRef = window.dbRef(window.db, `users/${targetId}/customTitle`);
+    window.dbSet(userTitleRef, newTitle.trim()).then(() => {
+      alert('称号を更新しました！');
+    });
+  }
+
+  function kickUser(targetId, targetName) {
+    if (!confirm(`本当にユーザー「${targetName} (${targetId})」をデータベースから削除・追放しますか？`)) return;
+
+    const userRef = window.dbRef(window.db, `users/${targetId}`);
+    const userInboxRef = window.dbRef(window.db, `inbox/${targetId}`);
+
+    Promise.all([
+      window.dbRemove(userRef),
+      window.dbRemove(userInboxRef)
+    ]).then(() => {
+      alert(`ユーザー「${targetName}」を完全に追放・削除しました。`);
+    }).catch(err => {
+      alert('削除に失敗しました: ' + err.message);
     });
   }
 
@@ -715,6 +791,11 @@
       closeModal('sendModal');
       document.getElementById('itemTitle').value = '';
       document.getElementById('itemUrl').value = '';
+      
+      if (isAdminUser()) {
+        triggerAdminFireworks();
+      }
+
       renderList();
       alert(`${friendInfo.name} さんにお題を送信しました！`);
     });
@@ -724,6 +805,12 @@
     if (!myId) return;
 
     updateFriendsNamesInStorage();
+
+    // 自分の称号をリアルタイム監視
+    const myTitleRef = window.dbRef(window.db, `users/${myId}/customTitle`);
+    window.dbOnValue(myTitleRef, (snapshot) => {
+      myCustomTitle = snapshot.val() || '';
+    });
 
     const myInboxRef = window.dbRef(window.db, `inbox/${myId}`);
     window.dbOnValue(myInboxRef, (snapshot) => {
@@ -862,6 +949,11 @@
       window.dbRemove(inboxRef);
 
       closeModal('evalModal');
+
+      if (isAdminUser()) {
+        triggerAdminFireworks();
+      }
+
       renderList();
       alert('評価を返信しました！');
     }).catch((error) => {
@@ -879,6 +971,23 @@
       localStorage.removeItem('ten_ratings');
       location.reload();
     }
+  }
+
+  function formatScoreText(score) {
+    if (score === null) return '';
+    if (score === 25) return '★ 25/10 (GOD)';
+    if (score >= 21) return `★ ${score}/10 (GOD)`;
+    if (score >= 12) return `★ ${score}/10 (MAX)`;
+    if (score === 11) return '★ 11/10';
+    if (score === 0) return '💀 0/10 (虚無)';
+    return `${score} / 10`;
+  }
+
+  function getScoreClass(score) {
+    if (score >= 21) return 'god-score';
+    if (score >= 12) return 'admin-score';
+    if (score === 11) return 'platinum';
+    return '';
   }
 
   function renderList() {
@@ -919,6 +1028,7 @@
     listEl.innerHTML = ratings.map(r => {
       const friendInfo = getFriendInfo(r.targetFriend);
       const targetNameDisplay = r.targetName || friendInfo.name || '相手';
+      const targetTitleDisplay = friendInfo.customTitle ? `<span class="title-badge">🏷️ ${friendInfo.customTitle}</span>` : '';
       const targetIsAdmin = r.targetIsAdmin || friendInfo.isAdmin;
 
       let statusMeta = r.date;
@@ -931,14 +1041,17 @@
       const titleHtml = r.title ? `<div class="card-title">${r.title}</div>` : '';
       const adminBadgeHtml = targetIsAdmin ? '<span class="admin-badge">👑 運営</span>' : '';
 
-      const myScoreText = r.myScore !== null ? (r.myScore === 20 ? '★ 20/10 (MAX)' : (r.myScore === 11 ? '★ 11/10' : `${r.myScore} / 10`)) : '';
-      const myScoreClass = r.myScore === 20 ? 'admin-score' : (r.myScore === 11 ? 'platinum' : '');
+      const myScoreText = formatScoreText(r.myScore);
+      const myScoreClass = getScoreClass(r.myScore);
 
-      const friendScoreText = r.friendScore !== null ? (r.friendScore === 20 ? '★ 20/10 (MAX)' : (r.friendScore === 11 ? '★ 11/10' : `${r.friendScore} / 10`)) : '';
-      const friendScoreClass = r.friendScore === 20 ? 'admin-score' : (r.friendScore === 11 ? 'platinum' : '');
+      const friendScoreText = formatScoreText(r.friendScore);
+      const friendScoreClass = getScoreClass(r.friendScore);
+
+      const isGodCard = (r.myScore >= 21) || (r.friendScore >= 21);
+      const isPlatinumCard = !isGodCard && ((r.myScore >= 11) || (r.friendScore >= 11));
 
       return `
-        <div class="card ${targetIsAdmin ? 'is-admin-card' : ''} ${r.myScore === 11 || r.friendScore === 11 || r.myScore === 20 || r.friendScore === 20 ? 'is-platinum' : ''}">
+        <div class="card ${targetIsAdmin ? 'is-admin-card' : ''} ${isGodCard ? 'is-god-card' : (isPlatinumCard ? 'is-platinum' : '')}">
           <div style="flex: 1; min-width: 0;">
             ${titleHtml}
             <div class="card-meta">${statusMeta}</div>
@@ -954,7 +1067,7 @@
             ` : ''}
             ${r.friendScore !== null ? `
               <div class="friend-score ${friendScoreClass}">
-                ${targetNameDisplay} ${adminBadgeHtml}:${friendScoreText}
+                ${targetNameDisplay}${targetTitleDisplay} ${adminBadgeHtml}:${friendScoreText}
               </div>
             ` : ''}
           </div>
