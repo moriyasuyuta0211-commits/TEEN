@@ -102,12 +102,11 @@
             border-color: #ffffff;
         }
 
-        /* 星のまわりのボックスを完全に排除しフラットに */
         .star-rating-container {
             padding: 4px 0;
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 10px;
         }
 
         .star-rating {
@@ -126,7 +125,7 @@
         }
 
         .star {
-            font-size: 24px;
+            font-size: 22px;
             color: #333333;
             user-select: none;
             line-height: 1;
@@ -138,7 +137,7 @@
         }
 
         .star-num {
-            font-size: 11px;
+            font-size: 10px;
             color: #666666;
             margin-top: 6px;
             font-weight: 600;
@@ -151,6 +150,60 @@
 
         .star-wrapper:active .star {
             transform: scale(1.2);
+        }
+
+        /* 11番目の特別「プラチナ」星エリア */
+        .platinum-section {
+            border-top: 1px dashed #333333;
+            padding-top: 12px;
+            margin-top: 4px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .platinum-wrapper {
+            background: linear-gradient(135deg, #222222, #111111);
+            border: 1px solid #737373;
+            border-radius: 12px;
+            padding: 10px 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: transform 0.1s, border-color 0.2s;
+        }
+
+        .platinum-wrapper:active {
+            transform: scale(1.05);
+        }
+
+        .platinum-wrapper.active {
+            border-color: #e5e5e5;
+            background: linear-gradient(135deg, #383838, #1a1a1a);
+            box-shadow: 0 0 12px rgba(229, 229, 229, 0.15);
+        }
+
+        .platinum-star {
+            font-size: 24px;
+            color: #555555;
+            transition: color 0.15s;
+        }
+
+        .platinum-wrapper.active .platinum-star {
+            color: #e2e8f0;
+            text-shadow: 0 0 8px rgba(226, 232, 240, 0.6);
+        }
+
+        .platinum-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #888888;
+            letter-spacing: 1px;
+            transition: color 0.15s;
+        }
+
+        .platinum-wrapper.active .platinum-label {
+            color: #f8fafc;
         }
 
         .btn-submit {
@@ -206,6 +259,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            transition: border-color 0.2s, background-color 0.2s;
+        }
+
+        /* プラチナ記録の特別ハイライト */
+        .item-card.is-platinum {
+            background: linear-gradient(135deg, #1c1c1e, #141416);
+            border: 1px solid #8e8e93;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
         }
 
         .item-main {
@@ -241,6 +302,12 @@
             letter-spacing: 0.5px;
         }
 
+        /* プラチナスコアの文字色 */
+        .score-badge.platinum-badge {
+            color: #f1f5f9;
+            text-shadow: 0 0 6px rgba(241, 245, 249, 0.4);
+        }
+
         .btn-delete {
             background: none;
             border: none;
@@ -269,8 +336,8 @@
 
     <div class="form-card">
         <div class="input-group">
-            <label for="titleInput">対象名</label>
-            <input type="text" id="titleInput" placeholder="例：雨の日の散歩、ある映画など">
+            <label for="titleInput">評価対象</label>
+            <input type="text" id="titleInput" placeholder="例：ある曲、映画など">
         </div>
 
         <div class="input-group">
@@ -290,6 +357,14 @@
                     <div class="star-wrapper" data-value="8"><span class="star">★</span><span class="star-num">8</span></div>
                     <div class="star-wrapper" data-value="9"><span class="star">★</span><span class="star-num">9</span></div>
                     <div class="star-wrapper" data-value="10"><span class="star">★</span><span class="star-num">10</span></div>
+                </div>
+                
+                <!-- 特別な11番目：プラチナ専用ボックス -->
+                <div class="platinum-section">
+                    <div class="platinum-wrapper" id="platinumBtn" data-value="11">
+                        <span class="platinum-star">★</span>
+                        <span class="platinum-label">PLATINUM (11)</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -315,6 +390,7 @@
 
         const starRating = document.getElementById('starRating');
         const starWrappers = starRating.querySelectorAll('.star-wrapper');
+        const platinumBtn = document.getElementById('platinumBtn');
         const scoreDisplay = document.getElementById('scoreDisplay');
         const titleInput = document.getElementById('titleInput');
         const saveBtn = document.getElementById('saveBtn');
@@ -325,15 +401,29 @@
 
         function updateStars(val) {
             currentScore = val;
-            scoreDisplay.textContent = `${val} / 10`;
+            if (val === 11) {
+                scoreDisplay.textContent = '11 / 11 (PLATINUM)';
+            } else {
+                scoreDisplay.textContent = `${val} / 10`;
+            }
+
+            // 1〜10の星の状態更新
             starWrappers.forEach(wrapper => {
                 const starVal = parseInt(wrapper.getAttribute('data-value'));
-                if (starVal <= val) {
+                if (val < 11 && starVal <= val) {
                     wrapper.classList.add('active');
                 } else {
                     wrapper.classList.remove('active');
                 }
             });
+
+            // プラチナの状態更新
+            if (val === 11) {
+                platinumBtn.classList.add('active');
+                starWrappers.forEach(w => w.classList.remove('active')); // 1〜10はオフに
+            } else {
+                platinumBtn.classList.remove('active');
+            }
         }
 
         updateStars(10);
@@ -343,6 +433,10 @@
                 const val = parseInt(wrapper.getAttribute('data-value'));
                 updateStars(val);
             });
+        });
+
+        platinumBtn.addEventListener('click', () => {
+            updateStars(11);
         });
 
         saveBtn.addEventListener('click', () => {
@@ -401,18 +495,25 @@
                 return;
             }
 
-            recordList.innerHTML = filtered.map(r => `
-                <div class="item-card">
-                    <div class="item-main">
-                        <div class="item-title">${escapeHtml(r.title)}</div>
-                        <div class="item-date">${r.date}</div>
+            recordList.innerHTML = filtered.map(r => {
+                const isPlatinum = r.score === 11;
+                const scoreText = isPlatinum ? '★ プラチナ (11)' : `★ ${r.score}/10`;
+                const cardClass = isPlatinum ? 'item-card is-platinum' : 'item-card';
+                const badgeClass = isPlatinum ? 'score-badge platinum-badge' : 'score-badge';
+
+                return `
+                    <div class="${cardClass}">
+                        <div class="item-main">
+                            <div class="item-title">${escapeHtml(r.title)}</div>
+                            <div class="item-date">${r.date}</div>
+                        </div>
+                        <div class="item-side">
+                            <div class="${badgeClass}">${scoreText}</div>
+                            <button class="btn-delete" onclick="deleteRecord(${r.id})">削除</button>
+                        </div>
                     </div>
-                    <div class="item-side">
-                        <div class="score-badge">★ ${r.score}/10</div>
-                        <button class="btn-delete" onclick="deleteRecord(${r.id})">削除</button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function escapeHtml(str) {
