@@ -3,8 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TEN — 評価をお互いに送り合う</title>
-  <link rel="apple-touch-icon" href="icon.png">
+  <title>TEN — 2人だけの評価共有</title>
   <style>
     :root {
       --bg: #0d0d0d;
@@ -13,21 +12,27 @@
       --text: #e5e5e5;
       --text-dim: #737373;
       --gold: #b6a078;
-      --gold-glow: rgba(182, 160, 120, 0.2);
+      --gold-glow: rgba(182, 160, 120, 0.25);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; padding: 20px 16px; }
     .app-container { width: 100%; max-width: 480px; }
 
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
     h1 { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
-    .badge-count { font-size: 12px; color: var(--text-dim); }
+    
+    .my-id-badge { background: #000; border: 1px solid var(--gold); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--gold); display: flex; align-items: center; gap: 6px; cursor: pointer; }
 
-    /* コード入力・読み込みボックス */
-    .code-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 20px; display: flex; gap: 8px; }
-    .code-box input { flex: 1; background: #000; border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 8px 12px; font-size: 12px; }
-    .code-box button { background: var(--border); color: var(--text); border: none; border-radius: 4px; padding: 8px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+    /* タブ切り替え */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .tab-btn { flex: 1; background: none; border: none; color: var(--text-dim); padding: 10px; font-size: 13px; font-weight: 600; cursor: pointer; position: relative; }
+    .tab-btn.active { color: var(--text); }
+    .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 2px; background: var(--gold); }
+    .badge { background: var(--gold); color: #000; font-size: 10px; border-radius: 10px; padding: 2px 6px; margin-left: 4px; font-weight: bold; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
     /* フォーム */
     .input-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; }
@@ -47,13 +52,10 @@
     .share-btn { flex: 1; background: transparent; color: var(--gold); border: 1px solid var(--gold); font-weight: 600; border-radius: 6px; padding: 12px; font-size: 13px; cursor: pointer; }
 
     /* リスト */
-    .controls { display: flex; gap: 8px; margin-bottom: 16px; }
-    .search-input { flex: 1; }
-
     .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
     .card.is-platinum { border-color: rgba(182, 160, 120, 0.4); }
     .card-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
-    .card-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+    .card-meta { font-size: 11px; color: var(--text-dim); }
     .card-scores { text-align: right; }
     .card-score { font-size: 13px; font-weight: 700; color: var(--text); }
     .card-score.platinum { color: var(--gold); }
@@ -61,7 +63,7 @@
     
     .action-btn { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; text-decoration: underline; margin-top: 6px; display: inline-block; }
 
-    /* モーダル (Bが受け取って評価をつける用) */
+    /* ダイレクト送信モーダル */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
     .modal-content { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; width: 100%; max-width: 400px; text-align: center; }
     .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
@@ -72,58 +74,128 @@
 <div class="app-container">
   <header>
     <h1>TEN</h1>
-    <span class="badge-count" id="totalCount">0 記録</span>
+    <div class="my-id-badge" onclick="copyMyId()">
+      <span>ID: <strong id="displayMyId">生成中...</strong></span>
+      <span style="font-size: 10px; opacity: 0.7;">📋</span>
+    </div>
   </header>
 
-  <!-- コード読み込み欄 -->
-  <div class="code-box">
-    <input type="text" id="codeInput" placeholder="お題コード または 返信コードを入力">
-    <button onclick="handleCode()">読み込む</button>
+  <!-- タブナビゲーション -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('timeline')">タイムライン</button>
+    <button class="tab-btn" onclick="switchTab('inbox')">受信トレイ <span class="badge" id="inboxCount" style="display:none;">0</span></button>
+    <button class="tab-btn" onclick="switchTab('friends')">フレンド</button>
   </div>
 
-  <!-- 自分用の入力フォーム -->
-  <div class="input-card">
-    <div class="input-group">
-      <label>評価対象</label>
-      <input type="text" id="itemTitle" placeholder="映画名、レストラン、本など">
+  <!-- 1. タイムライン タブ -->
+  <div id="tab-timeline" class="tab-content active">
+    <div class="input-card">
+      <div class="input-group">
+        <label>評価対象</label>
+        <input type="text" id="itemTitle" placeholder="映画名、レストラン、本など">
+      </div>
+      <div class="input-group">
+        <label>自分の評価 (1 — 11)</label>
+        <div class="star-scale" id="starContainer"></div>
+      </div>
+      <div class="btn-group">
+        <button class="submit-btn" onclick="addMyRating()">自分だけで記録</button>
+        <button class="share-btn" onclick="openSendTopicModal()">フレンドにお題を送信</button>
+      </div>
     </div>
-    <div class="input-group">
-      <label>自分の評価 (1 — 11)</label>
-      <div class="star-scale" id="starContainer"></div>
-    </div>
-    <div class="btn-group">
-      <button class="submit-btn" onclick="addMyRating()">自分だけで記録</button>
-      <button class="share-btn" onclick="createTopicAndShare()">お題を友達に送信</button>
+    <div id="ratingList"></div>
+  </div>
+
+  <!-- 2. 受信トレイ タブ -->
+  <div id="tab-inbox" class="tab-content">
+    <div id="inboxList">
+      <p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">届いたお題はありません</p>
     </div>
   </div>
 
-  <!-- リスト -->
-  <div class="controls">
-    <input type="text" class="search-input" id="searchInput" placeholder="検索..." oninput="renderList()">
+  <!-- 3. フレンド タブ -->
+  <div id="tab-friends" class="tab-content">
+    <div class="input-card">
+      <div class="input-group">
+        <label>友達のIDを登録</label>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="friendIdInput" placeholder="例: TEN-A8F2">
+          <button class="submit-btn" style="width: auto; padding: 0 16px;" onclick="addFriend()">登録</button>
+        </div>
+      </div>
+    </div>
+    <div id="friendsList"></div>
   </div>
-
-  <div id="ratingList"></div>
 </div>
 
-<!-- B用：お題を評価するモーダル -->
+<!-- お題送信モーダル -->
+<div class="modal-overlay" id="sendModal">
+  <div class="modal-content">
+    <div class="modal-title">お題を送信</div>
+    <p style="font-size:12px; color:var(--text-dim); margin-bottom:16px;" id="sendModalTopicName"></p>
+
+    <!-- フレンドにダイレクト送信 / コード共有 の切替 -->
+    <div class="input-group" style="text-align:left;">
+      <label>送信先フレンドを選択</label>
+      <select id="friendSelect" style="width:100%; background:#000; color:#fff; border:1px solid var(--border); padding:10px; border-radius:6px; margin-bottom:12px;"></select>
+    </div>
+    <button class="submit-btn" onclick="sendTopicToSelectedFriend()" style="margin-bottom:8px;">送信する</button>
+    <button class="action-btn" onclick="copyTopicCodeFallback()">コードをコピーしてLINEで送る</button>
+    <br><br>
+    <button class="action-btn" onclick="closeModal('sendModal')">キャンセル</button>
+  </div>
+</div>
+
+<!-- お題評価モーダル (受信トレイ用) -->
 <div class="modal-overlay" id="evalModal">
   <div class="modal-content">
     <div class="modal-title" id="modalTopicTitle">お題の評価</div>
-    <p style="font-size:12px; color:var(--text-dim); margin-bottom:16px;">あなた（B）の評価を選んで返信コードを作成してください</p>
+    <p style="font-size:12px; color:var(--text-dim); margin-bottom:16px;">評価を選んで返信してください</p>
     <div class="star-scale" id="modalStarContainer" style="margin-bottom:16px;"></div>
-    <button class="submit-btn" onclick="submitFriendEvaluation()">評価を確定して返信コードをコピー</button>
+    <button class="submit-btn" onclick="submitFriendEvaluation()">評価を確定して返信</button>
   </div>
 </div>
 
 <script>
+  let myId = '';
   let selectedScore = 10;
   let modalScore = 10;
-  let currentModalTopic = null;
+  let currentEvaluatingTopic = null;
 
   document.addEventListener('DOMContentLoaded', () => {
+    initMyId();
     initStars();
     renderList();
+    renderFriends();
+    renderInbox();
   });
+
+  // IDの初期化（即時にTEN-XXXXを発行）
+  function initMyId() {
+    let storedId = localStorage.getItem('ten_my_id');
+    if (!storedId) {
+      const randomStr = Math.random().toString(36).substring(2, 6).toUpperCase();
+      storedId = 'TEN-' + randomStr;
+      localStorage.setItem('ten_my_id', storedId);
+    }
+    myId = storedId;
+    document.getElementById('displayMyId').innerText = myId;
+  }
+
+  function copyMyId() {
+    navigator.clipboard.writeText(myId).then(() => {
+      alert(`あなたのID (${myId}) をコピーしました！友達に教えてください。`);
+    });
+  }
+
+  // タブ切り替え
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    event.currentTarget.classList.add('active');
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+  }
 
   // 星（1〜11）の描画
   function initStars() {
@@ -149,8 +221,12 @@
 
   function getRatings() { return JSON.parse(localStorage.getItem('ten_ratings') || '[]'); }
   function saveRatings(data) { localStorage.setItem('ten_ratings', JSON.stringify(data)); }
+  function getFriends() { return JSON.parse(localStorage.getItem('ten_friends') || '[]'); }
+  function saveFriends(data) { localStorage.setItem('ten_friends', JSON.stringify(data)); }
+  function getInbox() { return JSON.parse(localStorage.getItem('ten_inbox') || '[]'); }
+  function saveInbox(data) { localStorage.setItem('ten_inbox', JSON.stringify(data)); }
 
-  // 1. 自分だけで普通に記録
+  // 自分の記録追加
   function addMyRating() {
     const title = document.getElementById('itemTitle').value.trim();
     if (!title) return alert('対象名を入力してください');
@@ -170,122 +246,168 @@
     renderList();
   }
 
-  // 2. Aがお題を作成して送信用コードを発行
-  function createTopicAndShare() {
+  // フレンド登録
+  function addFriend() {
+    const input = document.getElementById('friendIdInput');
+    const fId = input.value.trim().toUpperCase();
+    if (!fId) return;
+    if (fId === myId) return alert('自分のIDは登録できません');
+
+    const friends = getFriends();
+    if (!friends.includes(fId)) {
+      friends.push(fId);
+      saveFriends(friends);
+      input.value = '';
+      renderFriends();
+      alert(`フレンド (${fId}) を登録しました！`);
+    }
+  }
+
+  function renderFriends() {
+    const friends = getFriends();
+    const listEl = document.getElementById('friendsList');
+    if (friends.length === 0) {
+      listEl.innerHTML = '<p style="text-align: center; color: var(--text-dim); font-size: 12px;">登録されたフレンドはいません</p>';
+      return;
+    }
+    listEl.innerHTML = friends.map(f => `
+      <div class="card">
+        <div><strong style="color:var(--gold);">${f}</strong></div>
+        <button class="action-btn" onclick="removeFriend('${f}')">削除</button>
+      </div>
+    `).join('');
+  }
+
+  function removeFriend(fId) {
+    let friends = getFriends().filter(f => f !== fId);
+    saveFriends(friends);
+    renderFriends();
+  }
+
+  // お題送信モーダルを開く
+  function openSendTopicModal() {
     const title = document.getElementById('itemTitle').value.trim();
     if (!title) return alert('対象名を入力してください');
+
+    document.getElementById('sendModalTopicName').innerText = `「${title}」を送信`;
+    const friends = getFriends();
+    const select = document.getElementById('friendSelect');
+    
+    if (friends.length === 0) {
+      select.innerHTML = '<option value="">登録フレンドなし</option>';
+    } else {
+      select.innerHTML = friends.map(f => `<option value="${f}">${f}</option>`).join('');
+    }
+
+    document.getElementById('sendModal').style.display = 'flex';
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  // ダイレクト送信
+  function sendTopicToSelectedFriend() {
+    const title = document.getElementById('itemTitle').value.trim();
+    const friendId = document.getElementById('friendSelect').value;
+    if (!friendId) return alert('フレンドを選択してください');
 
     const topicId = Date.now();
     const ratings = getRatings();
 
-    // Aのローカルに「Bの評価待ち」として保存
     ratings.unshift({
       id: topicId,
       title: title,
       myScore: selectedScore,
       friendScore: null,
       status: 'waiting',
+      targetFriend: friendId,
       date: new Date().toISOString().split('T')[0]
     });
 
     saveRatings(ratings);
+    closeModal('sendModal');
+    document.getElementById('itemTitle').value = '';
+    renderList();
+    alert(`${friendId} さんにお題を送信しました！`);
+  }
 
-    // お題コード作成 (type: "TOPIC")
-    const topicData = { type: 'TOPIC', id: topicId, title: title, fromScore: selectedScore };
+  // コードで送信（フォールバック）
+  function copyTopicCodeFallback() {
+    const title = document.getElementById('itemTitle').value.trim();
+    const topicId = Date.now();
+    const topicData = { type: 'TOPIC', id: topicId, title: title, fromScore: selectedScore, fromId: myId };
     const code = btoa(encodeURIComponent(JSON.stringify(topicData)));
 
     navigator.clipboard.writeText(code).then(() => {
-      alert(`「${title}」のお題コードをコピーしました！LINEでBさんに送ってください。`);
+      alert(`「${title}」のお題コードをコピーしました！LINE等で送ってください。`);
+      closeModal('sendModal');
     });
-
-    document.getElementById('itemTitle').value = '';
-    renderList();
   }
 
-  // 3. コード読み込み処理 (お題 or 返信)
-  function handleCode() {
-    const code = document.getElementById('codeInput').value.trim();
-    if (!code) return;
+  // 受信トレイ描画
+  function renderInbox() {
+    const inbox = getInbox();
+    const countEl = document.getElementById('inboxCount');
+    const listEl = document.getElementById('inboxList');
 
-    try {
-      const data = JSON.parse(decodeURIComponent(atob(code)));
-
-      // パターンA: Bがお題コードを読み込んだ場合
-      if (data.type === 'TOPIC') {
-        currentModalTopic = data;
-        document.getElementById('modalTopicTitle').innerText = `お題: ${data.title}`;
-        modalScore = 10;
-        renderModalStars();
-        document.getElementById('evalModal').style.display = 'flex';
-        document.getElementById('codeInput').value = '';
-      } 
-      // パターンB: AがBからの返信コードを読み込んだ場合
-      else if (data.type === 'REPLY') {
-        const ratings = getRatings();
-        const item = ratings.find(r => r.id === data.topicId);
-
-        if (item) {
-          item.friendScore = data.friendScore;
-          item.status = 'complete';
-          saveRatings(ratings);
-          alert(`Bさんから「${data.title}」の評価（★${data.friendScore}）を受け取りました！`);
-        } else {
-          // もしAのリストに元のカードが無ければ新しく作成
-          ratings.unshift({
-            id: Date.now(),
-            title: data.title,
-            myScore: null,
-            friendScore: data.friendScore,
-            status: 'complete',
-            date: new Date().toISOString().split('T')[0]
-          });
-          saveRatings(ratings);
-          alert(`Bさんからの評価（★${data.friendScore}）を登録しました！`);
-        }
-        document.getElementById('codeInput').value = '';
-        renderList();
-      }
-    } catch (e) {
-      alert('無効なコードです。確認の上再度お試しください。');
+    if (inbox.length > 0) {
+      countEl.innerText = inbox.length;
+      countEl.style.display = 'inline-block';
+    } else {
+      countEl.style.display = 'none';
+      listEl.innerHTML = '<p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">届いたお題はありません</p>';
+      return;
     }
+
+    listEl.innerHTML = inbox.map((item, idx) => `
+      <div class="card">
+        <div>
+          <div class="card-title">${item.title}</div>
+          <div class="card-meta">差出人: ${item.fromId || '友達'}</div>
+        </div>
+        <button class="submit-btn" style="width:auto; padding:8px 12px;" onclick="openEvalModal(${idx})">評価する</button>
+      </div>
+    `).join('');
   }
 
-  // B用モーダルの星描画
+  function openEvalModal(idx) {
+    const inbox = getInbox();
+    currentEvaluatingTopic = { ...inbox[idx], inboxIndex: idx };
+    document.getElementById('modalTopicTitle').innerText = `お題: ${currentEvaluatingTopic.title}`;
+    modalScore = 10;
+    renderModalStars();
+    document.getElementById('evalModal').style.display = 'flex';
+  }
+
   function renderModalStars() {
     renderStarScale('modalStarContainer', modalScore, (s) => { modalScore = s; renderModalStars(); });
   }
 
-  // Bが評価を確定して返信コードを作成
   function submitFriendEvaluation() {
-    if (!currentModalTopic) return;
+    if (!currentEvaluatingTopic) return;
 
-    const replyData = {
-      type: 'REPLY',
-      topicId: currentModalTopic.id,
-      title: currentModalTopic.title,
-      friendScore: modalScore
-    };
-
-    const replyCode = btoa(encodeURIComponent(JSON.stringify(replyData)));
-
-    // Bの端末にも記録を残す
+    // 自分のカードに保存
     const ratings = getRatings();
     ratings.unshift({
       id: Date.now(),
-      title: currentModalTopic.title,
+      title: currentEvaluatingTopic.title,
       myScore: modalScore,
-      friendScore: currentModalTopic.fromScore,
+      friendScore: currentEvaluatingTopic.fromScore,
       status: 'complete',
       date: new Date().toISOString().split('T')[0]
     });
     saveRatings(ratings);
 
-    navigator.clipboard.writeText(replyCode).then(() => {
-      alert(`あなたの評価（★${modalScore}）が入った返信コードをコピーしました！AさんにLINE等で送り返してください。`);
-    });
+    // 受信トレイから削除
+    let inbox = getInbox();
+    inbox.splice(currentEvaluatingTopic.inboxIndex, 1);
+    saveInbox(inbox);
 
-    document.getElementById('evalModal').style.display = 'none';
+    closeModal('evalModal');
+    renderInbox();
     renderList();
+    alert('評価を送信・登録しました！');
   }
 
   function deleteRating(id) {
@@ -294,22 +416,16 @@
     renderList();
   }
 
-  // 一覧を描画
   function renderList() {
     const listEl = document.getElementById('ratingList');
-    const search = document.getElementById('searchInput').value.toLowerCase();
     let ratings = getRatings();
-
-    document.getElementById('totalCount').innerText = `${ratings.length} 記録`;
-
-    if (search) ratings = ratings.filter(r => r.title.toLowerCase().includes(search));
 
     listEl.innerHTML = ratings.map(r => `
       <div class="card ${r.myScore === 11 || r.friendScore === 11 ? 'is-platinum' : ''}">
         <div>
           <div class="card-title">${r.title}</div>
           <div class="card-meta">
-            ${r.status === 'waiting' ? '<span style="color:var(--gold);">⏳ 友達の評価待ち...</span>' : r.date}
+            ${r.status === 'waiting' ? `<span style="color:var(--gold);">⏳ ${r.targetFriend || '友達'}の評価待ち...</span>` : r.date}
           </div>
           <button class="action-btn" onclick="deleteRating(${r.id})">削除</button>
         </div>
