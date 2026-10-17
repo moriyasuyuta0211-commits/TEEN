@@ -37,15 +37,25 @@
     /* フォーム */
     .input-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; }
     .input-group { margin-bottom: 16px; }
-    label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+    .label-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+    .score-display-text { font-size: 14px; font-weight: 700; color: #fff; }
+    .score-display-text.platinum { color: var(--gold); }
+
     input[type="text"], select { width: 100%; background: #000; border: 1px solid var(--border); border-radius: 6px; color: #fff; padding: 10px; font-size: 14px; }
 
-    /* 数字評価ボタン（1〜11） */
-    .score-selector { display: flex; gap: 4px; justify-content: space-between; margin-top: 6px; }
-    .score-btn { flex: 1; background: #000; border: 1px solid var(--border); color: var(--text-dim); padding: 8px 0; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer; transition: all 0.15s; text-align: center; }
-    .score-btn.active { background: var(--text); color: #000; border-color: var(--text); }
-    .score-btn.platinum { border-color: var(--gold); color: var(--gold); }
-    .score-btn.platinum.active { background: var(--gold); color: #000; box-shadow: 0 0 10px var(--gold-glow); }
+    /* 星＋数字 UI */
+    .star-scale-row { display: flex; align-items: flex-end; justify-content: space-between; padding: 6px 0; }
+    .star-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; background: none; border: none; }
+    .star-icon { font-size: 18px; color: #333; transition: color 0.15s; margin-bottom: 4px; }
+    .star-item.active .star-icon { color: #fff; }
+    .star-item.platinum .star-icon { color: #555; }
+    .star-item.platinum.active .star-icon { color: var(--gold); text-shadow: 0 0 8px var(--gold-glow); }
+    .star-num { font-size: 10px; font-weight: 700; color: #555; }
+    .star-item.active .star-num { color: var(--text-dim); }
+    .star-item.platinum.active .star-num { color: var(--gold); }
+    
+    .divider { width: 1px; height: 28px; background: var(--border); margin: 0 2px; }
 
     .btn-group { display: flex; gap: 8px; margin-top: 16px; }
     .submit-btn { flex: 1; background: var(--text); color: #000; font-weight: 600; border: none; border-radius: 6px; padding: 12px; font-size: 13px; cursor: pointer; }
@@ -124,11 +134,14 @@
     <div class="input-card">
       <div class="input-group">
         <label>評価対象</label>
-        <input type="text" id="itemTitle" placeholder="映画名、レストラン、本など">
+        <input type="text" id="itemTitle" placeholder="例：ある曲、映画など" style="margin-top: 6px;">
       </div>
       <div class="input-group">
-        <label>自分の評価 (1 — 11)</label>
-        <div class="score-selector" id="scoreSelectorContainer"></div>
+        <div class="label-row">
+          <label>評価</label>
+          <div class="score-display-text" id="scoreValueDisplay">8 / 10</div>
+        </div>
+        <div class="star-scale-row" id="starScaleContainer"></div>
       </div>
       <div class="btn-group">
         <button class="submit-btn" onclick="addMyRating()">自分だけで記録</button>
@@ -151,7 +164,7 @@
     <div class="input-card">
       <div class="input-group">
         <label>自分の表示名</label>
-        <div style="display:flex; gap:8px;">
+        <div style="display:flex; gap:8px; margin-top: 6px;">
           <input type="text" id="myNameInput" placeholder="例: たろう">
           <button class="submit-btn" style="width: auto; padding: 0 16px;" onclick="saveMyName()">保存</button>
         </div>
@@ -162,7 +175,7 @@
     <div class="input-card">
       <div class="input-group">
         <label>友達のIDを登録</label>
-        <div style="display:flex; gap:8px;">
+        <div style="display:flex; gap:8px; margin-top: 6px;">
           <input type="text" id="friendIdInput" placeholder="例: TEN-A8F2">
           <button class="submit-btn" style="width: auto; padding: 0 16px;" onclick="addFriend()">登録</button>
         </div>
@@ -179,7 +192,7 @@
     <p style="font-size:12px; color:var(--text-dim); margin-bottom:16px;" id="sendModalTopicName"></p>
     <div class="input-group" style="text-align:left;">
       <label>送信先フレンド</label>
-      <select id="friendSelect"></select>
+      <select id="friendSelect" style="margin-top: 6px;"></select>
     </div>
     <button class="submit-btn" onclick="sendTopicToFriend()" style="margin-bottom:8px;">送信する</button>
     <br>
@@ -191,8 +204,12 @@
 <div class="modal-overlay" id="evalModal">
   <div class="modal-content">
     <div class="modal-title" id="modalTopicTitle">お題の評価</div>
-    <p style="font-size:12px; color:var(--text-dim); margin-bottom:16px;">評価を選んで返信してください</p>
-    <div class="score-selector" id="modalScoreSelectorContainer" style="margin-bottom:20px;"></div>
+    <p style="font-size:12px; color:var(--text-dim); margin-bottom:12px;">評価を選んで返信してください</p>
+    <div class="label-row" style="margin-bottom: 8px;">
+      <label>評価</label>
+      <div class="score-display-text" id="modalScoreValueDisplay">8 / 10</div>
+    </div>
+    <div class="star-scale-row" id="modalStarScaleContainer" style="margin-bottom:20px;"></div>
     <button class="submit-btn" onclick="submitEvaluationResponse()">評価を確定して返信</button>
   </div>
 </div>
@@ -200,19 +217,21 @@
 <script>
   let myId = '';
   let myName = '';
-  let selectedScore = 10;
-  let modalScore = 10;
+  let selectedScore = 8;
+  let modalScore = 8;
   let currentInboxItem = null;
 
   window.addEventListener('firebase-ready', () => {
     initMyProfile();
-    renderScoreSelectors();
+    renderStarScaleUI('starScaleContainer', 'scoreValueDisplay', selectedScore, (s) => {
+      selectedScore = s;
+      renderStarScaleUI('starScaleContainer', 'scoreValueDisplay', selectedScore, arguments.callee);
+    });
     renderList();
     renderFriends();
     setupRealtimeListeners();
   });
 
-  // 自分のプロフィール（ID & 名前）初期化
   function initMyProfile() {
     let storedId = localStorage.getItem('ten_my_id');
     if (!storedId) {
@@ -226,7 +245,6 @@
     myName = localStorage.getItem('ten_my_name') || myId;
     document.getElementById('myNameInput').value = localStorage.getItem('ten_my_name') || '';
 
-    // Firebaseに自分のIDと名前の存在を反映（ID有効検証用）
     syncProfileToFirebase();
   }
 
@@ -262,30 +280,43 @@
     document.getElementById(`tab-${tabName}`).classList.add('active');
   }
 
-  // 1〜11の数字ボタンUI生成
-  function renderScoreSelectors() {
-    renderScoreButtons('scoreSelectorContainer', selectedScore, (s) => {
-      selectedScore = s;
-      renderScoreSelectors();
-    });
-  }
-
-  function renderModalScoreSelectors() {
-    renderScoreButtons('modalScoreSelectorContainer', modalScore, (s) => {
-      modalScore = s;
-      renderModalScoreSelectors();
-    });
-  }
-
-  function renderScoreButtons(containerId, currentScore, onClick) {
+  // 星＋数字＋右上数値UIのレンダリング
+  function renderStarScaleUI(containerId, displayId, currentScore, onClickCallback) {
     const container = document.getElementById(containerId);
+    const displayEl = document.getElementById(displayId);
     container.innerHTML = '';
+
+    // 右上数値表示の更新
+    if (currentScore === 11) {
+      displayEl.innerText = '11 / 10';
+      displayEl.className = 'score-display-text platinum';
+    } else {
+      displayEl.innerText = `${currentScore} / 10`;
+      displayEl.className = 'score-display-text';
+    }
+
     for (let i = 1; i <= 11; i++) {
-      const btn = document.createElement('button');
-      btn.className = `score-btn ${i === 11 ? 'platinum' : ''} ${i === currentScore ? 'active' : ''}`;
-      btn.innerText = i;
-      btn.onclick = () => onClick(i);
-      container.appendChild(btn);
+      if (i === 11) {
+        const div = document.createElement('div');
+        div.className = 'divider';
+        container.appendChild(div);
+      }
+
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = `star-item ${i === 11 ? 'platinum' : ''} ${i <= currentScore ? 'active' : ''}`;
+      
+      item.innerHTML = `
+        <span class="star-icon">★</span>
+        <span class="star-num">${i}</span>
+      `;
+
+      item.onclick = () => {
+        onClickCallback(i);
+        renderStarScaleUI(containerId, displayId, i, onClickCallback);
+      };
+
+      container.appendChild(item);
     }
   }
 
@@ -313,19 +344,17 @@
     renderList();
   }
 
-  // フレンド追加（IDチェック機能付き）
   async function addFriend() {
     const input = document.getElementById('friendIdInput');
     const fId = input.value.trim().toUpperCase();
     if (!fId) return;
     if (fId === myId) return alert('自分のIDは登録できません');
 
-    // FirebaseでIDが存在するかチェック
     const userRef = window.dbRef(window.db, `users/${fId}`);
     try {
       const snapshot = await window.dbGet(userRef);
       if (!snapshot.exists()) {
-        alert('このIDは無効または存在しません。');
+        alert('このIDは無効です。');
         return;
       }
 
@@ -488,8 +517,10 @@
   function openEvalModal(item) {
     currentInboxItem = item;
     document.getElementById('modalTopicTitle').innerText = `お題: ${item.title}`;
-    modalScore = 10;
-    renderModalScoreSelectors();
+    modalScore = 8;
+    renderStarScaleUI('modalStarScaleContainer', 'modalScoreValueDisplay', modalScore, (s) => {
+      modalScore = s;
+    });
     document.getElementById('evalModal').style.display = 'flex';
   }
 
