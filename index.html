@@ -136,7 +136,7 @@
 
   <!-- タブナビゲーション -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('timeline')">ホーム</button>
+    <button class="tab-btn active" onclick="switchTab('timeline')">タイムライン</button>
     <button class="tab-btn" onclick="switchTab('inbox')">受信トレイ <span class="badge" id="inboxCount" style="display:none;">0</span></button>
     <button class="tab-btn" onclick="switchTab('friends')">設定・フレンド</button>
   </div>
@@ -210,7 +210,7 @@
   </div>
 </div>
 
-<!-- お題送信モーダル -->
+<!-- お題送信モーダル（URLと曲名入力を入れ替え） -->
 <div class="modal-overlay" id="sendModal">
   <div class="modal-content" style="text-align: left;">
     <div class="modal-title" style="text-align: center;">曲をお題として送信</div>
@@ -221,13 +221,13 @@
     </div>
 
     <div class="input-group">
-      <label>曲名 / アーティスト名 (任意)</label>
-      <input type="text" id="sendTopicTitleInput" placeholder="例：曲名 - アーティスト名" style="margin-top: 6px;">
+      <label>楽曲URL (任意)</label>
+      <input type="text" id="sendTopicUrlInput" placeholder="URLをペースト..." style="margin-top: 6px;">
     </div>
 
     <div class="input-group">
-      <label>楽曲URL (任意)</label>
-      <input type="text" id="sendTopicUrlInput" placeholder="URLをペースト..." style="margin-top: 6px;">
+      <label>曲名 / アーティスト名 (任意)</label>
+      <input type="text" id="sendTopicTitleInput" placeholder="例：曲名 - アーティスト名" style="margin-top: 6px;">
     </div>
 
     <div style="text-align: center; margin-top: 16px;">
@@ -631,7 +631,6 @@
     const countEl = document.getElementById('inboxCount');
     const listEl = document.getElementById('inboxList');
 
-    // アプリのアイコンバッジを更新
     updateAppBadge(inboxList.length);
 
     if (inboxList.length > 0) {
