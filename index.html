@@ -293,4 +293,513 @@
   }
 
   function syncProfileToFirebase() {
-    if (!
+    if (!myId) return;
+    const userRef = window.dbRef(window.db, `users/${myId}`);
+    window.dbSet(userRef, {
+      id: myId,
+      name: myName,
+      lastSeen: Date.now()
+    });
+  }
+
+  function saveMyName() {
+    const inputName = document.getElementById('myNameInput').value.trim();
+    if (!inputName) return alert('名前を入力してください');
+    myName = inputName;
+    localStorage.setItem('ten_my_name', myName);
+    syncProfileToFirebase();
+
+    // 自分の名前が変わったとき、登録してくれている友達のローカルリスト等も更新できるようにする
+    // 保存されている既存のお題やタイムラインのターゲット名も最新名に反映させる
+    const ratings = getRatings();
+    ratings.forEach(r => {
+      if (r.targetName) {
+        // 必要に応じて更新
+      }
+    });
+    saveRatings(ratings);
+    renderList();
+
+    alert('表示名を保存しました！');
+  }
+
+  function copyMyId() {
+    navigator.clipboard.writeText(myId).then(() => {
+      alert(`あなたのID (${myId}) をコピーしました！`);
+    });
+  }
+
+  function switchTab(tabName) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+  }
+
+  function renderMainScale() {
+    renderStarScaleUI('starScaleContainer', 'scoreValueDisplay', selectedScore, (s) => {
+      selectedScore = s;
+      renderMainScale();
+    });
+  }
+
+  function renderModalScale() {
+    renderStarScaleUI('modalStarScaleContainer', 'modalScoreValueDisplay', modalScore, (s) => {
+      modalScore = s;
+      renderModalScale();
+    });
+  }
+
+  function renderStarScaleUI(containerId, displayId, currentScore, onSelect) {
+    const container = document.getElementById(containerId);
+    const displayEl = document.getElementById(displayId);
+    container.innerHTML = '';
+
+    if (currentScore === 11) {
+      displayEl.innerText = '11 / 10';
+      displayEl.className = 'score-display-text platinum';
+    } else {
+      displayEl.innerText = `${currentScore} / 10`;
+      displayEl.className = 'score-display-text';
+    }
+
+    for (let i = 1; i <= 11; i++) {
+      if (i === 11) {
+        const div = document.createElement('div');
+        div.className = 'divider';
+        container.appendChild(div);
+      }
+
+      const item = document.createElement('button');
+      item.type = 'button';
+      item.className = `star-item ${i === 11 ? 'platinum' : ''} ${i <= currentScore ? 'active' : ''}`;
+      
+      item.innerHTML = `
+        <span class="star-icon">★</span>
+        <span class="star-num">${i}</span>
+      `;
+
+      item.onclick = () => {
+        onSelect(i);
+      };
+
+      container.appendChild(item);
+    }
+  }
+
+  function getMusicLinkHtml(url) {
+    if (!url) return '';
+    let label = '曲を聴く';
+    let icon = '🎵';
+
+    if (url.includes('spotify.com')) {
+      label = 'Spotifyで聴く';
+      icon = '🎧';
+    } else if (url.includes('apple.com')) {
+      label = 'Apple Musicで聴く';
+      icon = '🍎';
+    }
+
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="music-link-btn">${icon} ${label}</a>`;
+  }
+
+  function getRatings() { return JSON.parse(localStorage.getItem('ten_ratings') || '[]'); }
+  function saveRatings(data) { localStorage.setItem('ten_ratings', JSON.stringify(data)); }
+  function getFriends() { return JSON.parse(localStorage.getItem('ten_friends') || '[]'); }
+  function saveFriends(data) { localStorage.setItem('ten_friends', JSON.stringify(data)); }
+
+  // リアルタイムでFirebaseからフレンドの最新名を取得して反映する関数
+  async function updateFriendsNamesInStorage() {
+    const friends = getFriends();
+    let updated = false;
+    for (let i = 0; i < friends.length; i++) {
+      const fId = typeof friends[i] === 'object' ? friends[i].id : friends[i];
+      const userRef = window.dbRef(window.db, `users/${fId}`);
+      try {
+        const snapshot = await window.dbGet(userRef);
+        if (snapshot.exists()) {
+          const userData = snapshot.val();
+          if (userData.name && userData.name !== (typeof friends[i] === 'object' ? friends[i].name : '')) {
+            friends[i] = { id: fId, name: userData.name };
+            updated = true;
+          }
+        }
+      } catch (e) {}
+    }
+    if (updated) {
+      saveFriends(friends);
+      renderFriends();
+    }
+  }
+
+  function getFriendName(fId) {
+    const friends = getFriends();
+    const found = friends.find(f => (typeof f === 'object' ? f.id : f) === fId);
+    if (found && typeof found === 'object' && found.name) {
+      return found.name;
+    }
+    return fId;
+  }
+
+  function addMyRating() {
+    const title = document.getElementById('itemTitle').value.trim();
+    const url = document.getElementById('itemUrl').value.trim();
+    if (!title && !url) return alert('曲名/アーティスト名、または楽曲URLのいずれかを入力してください');
+
+    const displayTitle = title || url;
+
+    const ratings = getRatings();
+    ratings.unshift({
+      id: 'local_' + Date.now(),
+      title: displayTitle,
+      url: url,
+      myScore: selectedScore,
+      friendScore: null,
+      memo: '',
+      status: 'complete',
+      timestamp: Date.now(),
+      date: new Date().toISOString().split('T')[0]
+    });
+
+    saveRatings(ratings);
+    document.getElementById('itemTitle').value = '';
+    document.getElementById('itemUrl').value = '';
+    renderList();
+  }
+
+  async function addFriend() {
+    const input = document.getElementById('friendIdInput');
+    const fId = input.value.trim().toUpperCase();
+    if (!fId) return;
+    if (fId === myId) return alert('自分のIDは登録できません');
+
+    const userRef = window.dbRef(window.db, `users/${fId}`);
+    try {
+      const snapshot = await window.dbGet(userRef);
+      if (!snapshot.exists()) {
+        alert('このIDは無効です。');
+        return;
+      }
+
+      const userData = snapshot.val();
+      const friendName = userData.name || fId;
+
+      const friends = getFriends();
+      const existing = friends.find(f => (typeof f === 'object' ? f.id : f) === fId);
+      
+      if (!existing) {
+        friends.push({ id: fId, name: friendName });
+        saveFriends(friends);
+        input.value = '';
+        renderFriends();
+        alert(`フレンド (${friendName}) を登録しました！`);
+        setupRealtimeListeners();
+      } else {
+        alert('すでに登録されているフレンドです');
+      }
+    } catch (e) {
+      alert('通信エラーが発生しました。もう一度試してください。');
+    }
+  }
+
+  function renderFriends() {
+    const friends = getFriends();
+    const listEl = document.getElementById('friendsList');
+    if (friends.length === 0) {
+      listEl.innerHTML = '<p style="text-align: center; color: var(--text-dim); font-size: 12px;">登録されたフレンドはいません</p>';
+      return;
+    }
+    listEl.innerHTML = friends.map(f => {
+      const fId = typeof f === 'object' ? f.id : f;
+      const fName = typeof f === 'object' ? f.name : f;
+      return `
+        <div class="card">
+          <div>
+            <strong style="color:var(--text);">${fName}</strong>
+            <div style="font-size:10px; color:var(--text-dim);">${fId}</div>
+          </div>
+          <button class="action-btn" onclick="removeFriend('${fId}')">削除</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function removeFriend(fId) {
+    const friends = getFriends().filter(f => (typeof f === 'object' ? f.id : f) !== fId);
+    saveFriends(friends);
+    renderFriends();
+    setupRealtimeListeners();
+  }
+
+  function openSendTopicModal() {
+    updateFriendsNamesInStorage(); // モーダルを開いた時にフレンドの名前を最新に同期
+    const friends = getFriends();
+    const select = document.getElementById('friendSelect');
+    
+    document.getElementById('sendTopicTitleInput').value = document.getElementById('itemTitle').value.trim();
+    document.getElementById('sendTopicUrlInput').value = document.getElementById('itemUrl').value.trim();
+    
+    if (friends.length === 0) {
+      select.innerHTML = '<option value="">登録フレンドがいません</option>';
+    } else {
+      select.innerHTML = friends.map(f => {
+        const fId = typeof f === 'object' ? f.id : f;
+        const fName = typeof f === 'object' ? f.name : f;
+        return `<option value="${fId}">${fName} (${fId})</option>`;
+      }).join('');
+    }
+    document.getElementById('sendModal').style.display = 'flex';
+  }
+
+  function closeModal(id) { document.getElementById(id).style.display = 'none'; }
+
+  function sendTopicToFriend() {
+    const friendId = document.getElementById('friendSelect').value;
+    if (!friendId) return alert('送信先フレンドを選択してください');
+
+    const title = document.getElementById('sendTopicTitleInput').value.trim();
+    const url = document.getElementById('sendTopicUrlInput').value.trim();
+    if (!title && !url) return alert('曲名/アーティスト名、または楽曲URLのいずれかを入力してください');
+
+    const displayTitle = title || url;
+    const topicId = 'topic_' + Date.now();
+    const targetName = getFriendName(friendId);
+    
+    const ratings = getRatings();
+    ratings.unshift({
+      id: topicId,
+      title: displayTitle,
+      url: url,
+      myScore: null,
+      friendScore: null,
+      memo: '',
+      status: 'waiting',
+      targetFriend: friendId,
+      targetName: targetName,
+      timestamp: Date.now(),
+      date: new Date().toISOString().split('T')[0]
+    });
+    saveRatings(ratings);
+
+    const inboxRef = window.dbRef(window.db, `inbox/${friendId}/${topicId}`);
+    window.dbSet(inboxRef, {
+      topicId: topicId,
+      title: displayTitle,
+      url: url,
+      fromId: myId,
+      fromName: myName // 送信時点の自分の最新の名前を格納
+    }).then(() => {
+      closeModal('sendModal');
+      document.getElementById('itemTitle').value = '';
+      document.getElementById('itemUrl').value = '';
+      renderList();
+      alert(`${targetName} さんにお題を送信しました！`);
+    });
+  }
+
+  function setupRealtimeListeners() {
+    if (!myId) return;
+
+    // 起動時および変更時にフレンド名も自動同期
+    updateFriendsNamesInStorage();
+
+    const myInboxRef = window.dbRef(window.db, `inbox/${myId}`);
+    window.dbOnValue(myInboxRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      const inboxList = Object.values(data);
+      renderInbox(inboxList);
+    });
+
+    const ratings = getRatings();
+    ratings.forEach(r => {
+      if (r.status === 'waiting' && r.targetFriend) {
+        const replyRef = window.dbRef(window.db, `replies/${myId}/${r.id}`);
+        window.dbOnValue(replyRef, (snapshot) => {
+          const reply = snapshot.val();
+          if (reply) {
+            if (reply.rejected) {
+              r.status = 'rejected';
+            } else {
+              r.friendScore = reply.friendScore;
+              r.memo = reply.memo || '';
+              r.status = 'complete';
+            }
+            saveRatings(ratings);
+            renderList();
+            window.dbRemove(replyRef);
+          }
+        });
+      }
+    });
+  }
+
+  function renderInbox(inboxList = []) {
+    const countEl = document.getElementById('inboxCount');
+    const listEl = document.getElementById('inboxList');
+
+    if (inboxList.length > 0) {
+      countEl.innerText = inboxList.length;
+      countEl.style.display = 'inline-block';
+      listEl.innerHTML = inboxList.map((item) => `
+        <div class="card">
+          <div style="flex: 1; min-width: 0;">
+            <div class="card-title">${item.title}</div>
+            <div class="card-meta">差出人: ${item.fromName || item.fromId}</div>
+            ${getMusicLinkHtml(item.url)}
+          </div>
+          <div style="display: flex; gap: 6px; flex: none; align-items: center;">
+            <button class="submit-btn" style="flex: none; width: auto; padding: 6px 14px; font-size: 12px;" onclick='openEvalModal(${JSON.stringify(item)})'>評価する</button>
+            <button class="reject-btn" onclick='rejectInboxItem(${JSON.stringify(item)})'>拒否</button>
+          </div>
+        </div>
+      `).join('');
+    } else {
+      countEl.style.display = 'none';
+      listEl.innerHTML = '<p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">届いたお題はありません</p>';
+    }
+  }
+
+  function rejectInboxItem(item) {
+    if (!confirm(`「${item.title}」のお題を拒否しますか？`)) return;
+
+    const replyRef = window.dbRef(window.db, `replies/${item.fromId}/${item.topicId}`);
+    window.dbSet(replyRef, { 
+      rejected: true
+    }).then(() => {
+      const inboxRef = window.dbRef(window.db, `inbox/${myId}/${item.topicId}`);
+      window.dbRemove(inboxRef);
+      alert('お題を拒否しました。');
+    }).catch((error) => {
+      alert('処理に失敗しました: ' + error.message);
+    });
+  }
+
+  function openEvalModal(item) {
+    currentInboxItem = item;
+    document.getElementById('modalTopicTitle').innerText = `曲: ${item.title}`;
+    document.getElementById('modalMusicLinkContainer').innerHTML = getMusicLinkHtml(item.url);
+    modalScore = 8;
+    document.getElementById('evalMemoInput').value = '';
+    renderModalScale();
+    document.getElementById('evalModal').style.display = 'flex';
+  }
+
+  function submitEvaluationResponse() {
+    if (!currentInboxItem) return;
+
+    const memoText = document.getElementById('evalMemoInput').value.trim();
+    const ratings = getRatings();
+    
+    const existingIndex = ratings.findIndex(r => r.id === currentInboxItem.topicId);
+    
+    if (existingIndex !== -1) {
+      ratings[existingIndex].friendScore = modalScore;
+      ratings[existingIndex].memo = memoText;
+      ratings[existingIndex].status = 'complete';
+    } else {
+      ratings.unshift({
+        id: currentInboxItem.topicId,
+        title: currentInboxItem.title,
+        url: currentInboxItem.url || '',
+        myScore: modalScore,
+        friendScore: null,
+        memo: memoText,
+        status: 'complete',
+        timestamp: Date.now(),
+        date: new Date().toISOString().split('T')[0]
+      });
+    }
+    saveRatings(ratings);
+
+    const replyRef = window.dbRef(window.db, `replies/${currentInboxItem.fromId}/${currentInboxItem.topicId}`);
+    window.dbSet(replyRef, { 
+      friendScore: modalScore,
+      memo: memoText
+    }).then(() => {
+      const inboxRef = window.dbRef(window.db, `inbox/${myId}/${currentInboxItem.topicId}`);
+      window.dbRemove(inboxRef);
+
+      closeModal('evalModal');
+      renderList();
+      alert('評価を返信しました！');
+    }).catch((error) => {
+      alert('返信の送信に失敗しました: ' + error.message);
+    });
+  }
+
+  function deleteRating(id) {
+    saveRatings(getRatings().filter(r => r.id !== id));
+    renderList();
+  }
+
+  function clearAllData() {
+    if (confirm('これまで記録したローカルデータをすべて消去しますか？')) {
+      localStorage.removeItem('ten_ratings');
+      location.reload();
+    }
+  }
+
+  function renderList() {
+    const listEl = document.getElementById('ratingList');
+    let ratings = getRatings();
+
+    const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (searchQuery) {
+      ratings = ratings.filter(r => r.title.toLowerCase().includes(searchQuery));
+    }
+
+    const sortType = document.getElementById('sortSelect').value;
+    ratings.sort((a, b) => {
+      if (sortType === 'newest') {
+        return (b.timestamp || 0) - (a.timestamp || 0);
+      } else if (sortType === 'oldest') {
+        return (a.timestamp || 0) - (b.timestamp || 0);
+      } else if (sortType === 'highest') {
+        const scoreA = Math.max(a.myScore || 0, a.friendScore || 0);
+        const scoreB = Math.max(b.myScore || 0, b.friendScore || 0);
+        return scoreB - scoreB;
+      }
+    });
+
+    if (ratings.length === 0) {
+      listEl.innerHTML = '<p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">記録はありません</p>';
+      return;
+    }
+
+    listEl.innerHTML = ratings.map(r => {
+      const targetNameDisplay = r.targetName || getFriendName(r.targetFriend) || '相手';
+      let statusMeta = r.date;
+      if (r.status === 'waiting') {
+        statusMeta = `<span style="color:var(--text);">⏳ ${targetNameDisplay}の評価待ち...</span>`;
+      } else if (r.status === 'rejected') {
+        statusMeta = `<span style="color:#ff5555;">❌ ${targetNameDisplay}に拒否されました</span>`;
+      }
+
+      return `
+        <div class="card ${r.myScore === 11 || r.friendScore === 11 ? 'is-platinum' : ''}">
+          <div style="flex: 1; min-width: 0;">
+            <div class="card-title">${r.title}</div>
+            <div class="card-meta">${statusMeta}</div>
+            ${getMusicLinkHtml(r.url)}
+            ${r.memo ? `<div class="card-memo">“${r.memo}”</div>` : ''}
+            <div><button class="action-btn" onclick="deleteRating('${r.id}')">削除</button></div>
+          </div>
+          <div class="card-scores">
+            ${r.myScore !== null ? `
+              <div class="card-score ${r.myScore === 11 ? 'platinum' : ''}">
+                自分: ${r.myScore === 11 ? '★ 11/10' : `${r.myScore} / 10`}
+              </div>
+            ` : ''}
+            ${r.friendScore !== null ? `
+              <div class="friend-score ${r.friendScore === 11 ? 'platinum' : ''}">
+                ${targetNameDisplay}:${r.friendScore === 11 ? '★ 11/10' : `${r.friendScore} / 10`}
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+</script>
+</body>
+</html>
