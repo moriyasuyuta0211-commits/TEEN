@@ -232,7 +232,6 @@
             transition: border-color 0.2s, background-color 0.2s;
         }
 
-        /* プラチナ記録の特別ハイライト */
         .item-card.is-platinum {
             background: linear-gradient(135deg, #1c1c1e, #141416);
             border: 1px solid #8e8e93;
@@ -305,8 +304,8 @@
 
     <div class="form-card">
         <div class="input-group">
-            <label for="titleInput">対象名</label>
-            <input type="text" id="titleInput" placeholder="例：雨の日の散歩、ある映画など">
+            <label for="titleInput">評価対象</label>
+            <input type="text" id="titleInput" placeholder="例：ある曲、映画など">
         </div>
 
         <div class="input-group">
@@ -326,7 +325,7 @@
                     <div class="star-wrapper" data-value="8"><span class="star">★</span><span class="star-num">8</span></div>
                     <div class="star-wrapper" data-value="9"><span class="star">★</span><span class="star-num">9</span></div>
                     <div class="star-wrapper" data-value="10"><span class="star">★</span><span class="star-num">10</span></div>
-                    <!-- 11番目：プラチナ星（同じ並びの中に枠付きで統合） -->
+                    <!-- 11番目：プラチナ星 -->
                     <div class="star-wrapper platinum" data-value="11">
                         <div class="star-box"><span class="star">★</span></div>
                         <span class="star-num">11</span>
@@ -364,6 +363,14 @@
         const searchInput = document.getElementById('searchInput');
         const sortSelect = document.getElementById('sortSelect');
 
+        // 触覚フィードバック（バイブレーション）関数
+        function triggerHaptic() {
+            if (navigator.vibrate) {
+                // 15ミリ秒の軽い振動
+                navigator.vibrate(15);
+            }
+        }
+
         function updateStars(val) {
             currentScore = val;
             if (val === 11) {
@@ -395,6 +402,7 @@
         starWrappers.forEach(wrapper => {
             wrapper.addEventListener('click', () => {
                 const val = parseInt(wrapper.getAttribute('data-value'));
+                triggerHaptic(); // タップ時に触覚フィードバックを発生
                 updateStars(val);
             });
         });
@@ -405,6 +413,8 @@
                 alert('対象名を入力してください');
                 return;
             }
+
+            triggerHaptic(); // 記録時にも軽く振動
 
             const newRecord = {
                 id: Date.now(),
@@ -426,6 +436,7 @@
 
         function deleteRecord(id) {
             if (confirm('この記録を削除しますか？')) {
+                triggerHaptic();
                 records = records.filter(r => r.id !== id);
                 saveRecords();
                 renderRecords();
