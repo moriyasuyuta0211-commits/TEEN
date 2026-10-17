@@ -656,11 +656,9 @@
     }
 
     try {
-      // 申請データを削除
       const reqRef = window.dbRef(window.db, `friend_requests/${myId}/${req.fromId}`);
       await window.dbRemove(reqRef);
 
-      // 申請送信者側の端末に「承認されたよ」と伝える同期シグナルを送信
       const acceptedRef = window.dbRef(window.db, `accepted_friends/${req.fromId}/${myId}`);
       await window.dbSet(acceptedRef, {
         id: myId,
@@ -872,7 +870,6 @@
       myCustomTitle = snapshot.val() || '';
     });
 
-    // 届いているフレンド申請のリアルタイム監視
     const myReqRef = window.dbRef(window.db, `friend_requests/${myId}`);
     window.dbOnValue(myReqRef, (snapshot) => {
       const data = snapshot.val() || {};
@@ -880,7 +877,6 @@
       renderFriendRequests(reqList);
     });
 
-    // 自分宛ての「フレンド申請承認（相互フレンド通知）」リアルタイム監視
     const myAcceptedRef = window.dbRef(window.db, `accepted_friends/${myId}`);
     window.dbOnValue(myAcceptedRef, (snapshot) => {
       const data = snapshot.val() || {};
@@ -1058,10 +1054,11 @@
     const memoText = document.getElementById('evalMemoInput').value.trim();
     const ratings = getRatings();
     
+    // 【修正】自分が受け取ったお題に評価して返信する際、もしまだタイムラインに無ければ追加し、あれば完了に更新する
     const existingIndex = ratings.findIndex(r => r.id === currentInboxItem.topicId);
     
     if (existingIndex !== -1) {
-      ratings[existingIndex].friendScore = modalScore;
+      ratings[existingIndex].myScore = modalScore;
       ratings[existingIndex].memo = memoText;
       ratings[existingIndex].status = 'complete';
     } else {
