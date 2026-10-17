@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TEN — 2人だけの評価共有</title>
+  <title>TEN — 2人専用リアルタイム評価共有</title>
   <style>
     :root {
       --bg: #0d0d0d;
@@ -38,7 +38,7 @@
     .input-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; }
     .input-group { margin-bottom: 16px; }
     label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
-    input[type="text"] { width: 100%; background: #000; border: 1px solid var(--border); border-radius: 6px; color: #fff; padding: 10px; font-size: 14px; }
+    input[type="text"], select { width: 100%; background: #000; border: 1px solid var(--border); border-radius: 6px; color: #fff; padding: 10px; font-size: 14px; }
 
     /* 星評価バー */
     .star-scale { display: flex; align-items: center; justify-content: space-between; background: #000; padding: 10px; border-radius: 6px; border: 1px solid var(--border); }
@@ -63,11 +63,41 @@
     
     .action-btn { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; text-decoration: underline; margin-top: 6px; display: inline-block; }
 
-    /* ダイレクト送信モーダル */
+    /* モーダル */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 100; padding: 16px; }
     .modal-content { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; width: 100%; max-width: 400px; text-align: center; }
     .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
   </style>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, set, get, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAhc55wV9tg83dAtYL-PkHlaeo3hn9USg8",
+      authDomain: "tenn-36f7d.firebaseapp.com",
+      projectId: "tenn-36f7d",
+      storageBucket: "tenn-36f7d.firebasestorage.app",
+      messagingSenderId: "125540409265",
+      appId: "1:125540409265:web:e8bfcb2990f6e3814aa790",
+      measurementId: "G-S89F1QBE8Y"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    window.db = db;
+    window.dbRef = ref;
+    window.dbSet = set;
+    window.dbGet = get;
+    window.dbPush = push;
+    window.dbOnValue = onValue;
+    window.dbRemove = remove;
+    
+    // Firebase初期化完了後にアプリを起動
+    window.dispatchEvent(new Event('firebase-ready'));
+  </script>
 </head>
 <body>
 
@@ -75,7 +105,7 @@
   <header>
     <h1>TEN</h1>
     <div class="my-id-badge" onclick="copyMyId()">
-      <span>ID: <strong id="displayMyId">生成中...</strong></span>
+      <span>ID: <strong id="displayMyId">接続中...</strong></span>
       <span style="font-size: 10px; opacity: 0.7;">📋</span>
     </div>
   </header>
@@ -87,7 +117,7 @@
     <button class="tab-btn" onclick="switchTab('friends')">フレンド</button>
   </div>
 
-  <!-- 1. タイムライン タブ -->
+  <!-- 1. タイムライン -->
   <div id="tab-timeline" class="tab-content active">
     <div class="input-card">
       <div class="input-group">
@@ -106,14 +136,14 @@
     <div id="ratingList"></div>
   </div>
 
-  <!-- 2. 受信トレイ タブ -->
+  <!-- 2. 受信トレイ -->
   <div id="tab-inbox" class="tab-content">
     <div id="inboxList">
       <p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">届いたお題はありません</p>
     </div>
   </div>
 
-  <!-- 3. フレンド タブ -->
+  <!-- 3. フレンド -->
   <div id="tab-friends" class="tab-content">
     <div class="input-card">
       <div class="input-group">
@@ -133,26 +163,23 @@
   <div class="modal-content">
     <div class="modal-title">お題を送信</div>
     <p style="font-size:12px; color:var(--text-dim); margin-bottom:16px;" id="sendModalTopicName"></p>
-
-    <!-- フレンドにダイレクト送信 / コード共有 の切替 -->
     <div class="input-group" style="text-align:left;">
-      <label>送信先フレンドを選択</label>
-      <select id="friendSelect" style="width:100%; background:#000; color:#fff; border:1px solid var(--border); padding:10px; border-radius:6px; margin-bottom:12px;"></select>
+      <label>送信先フレンド</label>
+      <select id="friendSelect"></select>
     </div>
-    <button class="submit-btn" onclick="sendTopicToSelectedFriend()" style="margin-bottom:8px;">送信する</button>
-    <button class="action-btn" onclick="copyTopicCodeFallback()">コードをコピーしてLINEで送る</button>
-    <br><br>
+    <button class="submit-btn" onclick="sendTopicToFriend()" style="margin-bottom:8px;">送信する</button>
+    <br>
     <button class="action-btn" onclick="closeModal('sendModal')">キャンセル</button>
   </div>
 </div>
 
-<!-- お題評価モーダル (受信トレイ用) -->
+<!-- 評価返信モーダル -->
 <div class="modal-overlay" id="evalModal">
   <div class="modal-content">
     <div class="modal-title" id="modalTopicTitle">お題の評価</div>
     <p style="font-size:12px; color:var(--text-dim); margin-bottom:16px;">評価を選んで返信してください</p>
     <div class="star-scale" id="modalStarContainer" style="margin-bottom:16px;"></div>
-    <button class="submit-btn" onclick="submitFriendEvaluation()">評価を確定して返信</button>
+    <button class="submit-btn" onclick="submitEvaluationResponse()">評価を確定して返信</button>
   </div>
 </div>
 
@@ -160,17 +187,17 @@
   let myId = '';
   let selectedScore = 10;
   let modalScore = 10;
-  let currentEvaluatingTopic = null;
+  let currentInboxItem = null;
 
-  document.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('firebase-ready', () => {
     initMyId();
     initStars();
     renderList();
     renderFriends();
-    renderInbox();
+    setupRealtimeListeners();
   });
 
-  // IDの初期化（即時にTEN-XXXXを発行）
+  // IDの初期化
   function initMyId() {
     let storedId = localStorage.getItem('ten_my_id');
     if (!storedId) {
@@ -184,20 +211,17 @@
 
   function copyMyId() {
     navigator.clipboard.writeText(myId).then(() => {
-      alert(`あなたのID (${myId}) をコピーしました！友達に教えてください。`);
+      alert(`あなたのID (${myId}) をコピーしました！`);
     });
   }
 
-  // タブ切り替え
   function switchTab(tabName) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    
     event.currentTarget.classList.add('active');
     document.getElementById(`tab-${tabName}`).classList.add('active');
   }
 
-  // 星（1〜11）の描画
   function initStars() {
     renderStarScale('starContainer', selectedScore, (s) => { selectedScore = s; initStars(); });
   }
@@ -223,17 +247,15 @@
   function saveRatings(data) { localStorage.setItem('ten_ratings', JSON.stringify(data)); }
   function getFriends() { return JSON.parse(localStorage.getItem('ten_friends') || '[]'); }
   function saveFriends(data) { localStorage.setItem('ten_friends', JSON.stringify(data)); }
-  function getInbox() { return JSON.parse(localStorage.getItem('ten_inbox') || '[]'); }
-  function saveInbox(data) { localStorage.setItem('ten_inbox', JSON.stringify(data)); }
 
-  // 自分の記録追加
+  // ローカル記録追加
   function addMyRating() {
     const title = document.getElementById('itemTitle').value.trim();
     if (!title) return alert('対象名を入力してください');
 
     const ratings = getRatings();
     ratings.unshift({
-      id: Date.now(),
+      id: 'local_' + Date.now(),
       title: title,
       myScore: selectedScore,
       friendScore: null,
@@ -246,7 +268,7 @@
     renderList();
   }
 
-  // フレンド登録
+  // フレンド管理
   function addFriend() {
     const input = document.getElementById('friendIdInput');
     const fId = input.value.trim().toUpperCase();
@@ -260,6 +282,7 @@
       input.value = '';
       renderFriends();
       alert(`フレンド (${fId}) を登録しました！`);
+      setupRealtimeListeners();
     }
   }
 
@@ -279,12 +302,12 @@
   }
 
   function removeFriend(fId) {
-    let friends = getFriends().filter(f => f !== fId);
-    saveFriends(friends);
+    saveFriends(getFriends().filter(f => f !== fId));
     renderFriends();
+    setupRealtimeListeners();
   }
 
-  // お題送信モーダルを開く
+  // お題送信モーダル
   function openSendTopicModal() {
     const title = document.getElementById('itemTitle').value.trim();
     if (!title) return alert('対象名を入力してください');
@@ -294,27 +317,25 @@
     const select = document.getElementById('friendSelect');
     
     if (friends.length === 0) {
-      select.innerHTML = '<option value="">登録フレンドなし</option>';
+      select.innerHTML = '<option value="">登録フレンドがいません</option>';
     } else {
       select.innerHTML = friends.map(f => `<option value="${f}">${f}</option>`).join('');
     }
-
     document.getElementById('sendModal').style.display = 'flex';
   }
 
-  function closeModal(id) {
-    document.getElementById(id).style.display = 'none';
-  }
+  function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-  // ダイレクト送信
-  function sendTopicToSelectedFriend() {
+  // Firebase経由でお題送信
+  function sendTopicToFriend() {
     const title = document.getElementById('itemTitle').value.trim();
     const friendId = document.getElementById('friendSelect').value;
     if (!friendId) return alert('フレンドを選択してください');
 
-    const topicId = Date.now();
+    const topicId = 'topic_' + Date.now();
+    
+    // 自分のタイムラインに「待ち受け中」として追加
     const ratings = getRatings();
-
     ratings.unshift({
       id: topicId,
       title: title,
@@ -324,57 +345,81 @@
       targetFriend: friendId,
       date: new Date().toISOString().split('T')[0]
     });
-
     saveRatings(ratings);
-    closeModal('sendModal');
-    document.getElementById('itemTitle').value = '';
-    renderList();
-    alert(`${friendId} さんにお題を送信しました！`);
+
+    // Firebaseの相手のInboxに書き込む
+    const inboxRef = window.dbRef(window.db, `inbox/${friendId}/${topicId}`);
+    window.dbSet(inboxRef, {
+      topicId: topicId,
+      title: title,
+      fromId: myId,
+      fromScore: selectedScore
+    }).then(() => {
+      closeModal('sendModal');
+      document.getElementById('itemTitle').value = '';
+      renderList();
+      alert(`${friendId} さんにお題を送信しました！`);
+    });
   }
 
-  // コードで送信（フォールバック）
-  function copyTopicCodeFallback() {
-    const title = document.getElementById('itemTitle').value.trim();
-    const topicId = Date.now();
-    const topicData = { type: 'TOPIC', id: topicId, title: title, fromScore: selectedScore, fromId: myId };
-    const code = btoa(encodeURIComponent(JSON.stringify(topicData)));
+  // リアルタイムリスナー設定
+  function setupRealtimeListeners() {
+    if (!myId) return;
 
-    navigator.clipboard.writeText(code).then(() => {
-      alert(`「${title}」のお題コードをコピーしました！LINE等で送ってください。`);
-      closeModal('sendModal');
+    // 1. 自分の受信トレイの監視
+    const myInboxRef = window.dbRef(window.db, `inbox/${myId}`);
+    window.dbOnValue(myInboxRef, (snapshot) => {
+      const data = snapshot.val() || {};
+      const inboxList = Object.values(data);
+      renderInbox(inboxList);
+    });
+
+    // 2. 自分が出したお題に対する返信の監視
+    const ratings = getRatings();
+    ratings.forEach(r => {
+      if (r.status === 'waiting' && r.targetFriend) {
+        const replyRef = window.dbRef(window.db, `replies/${myId}/${r.id}`);
+        window.dbOnValue(replyRef, (snapshot) => {
+          const reply = snapshot.val();
+          if (reply) {
+            r.friendScore = reply.friendScore;
+            r.status = 'complete';
+            saveRatings(ratings);
+            renderList();
+            // 返信を受け取ったらFirebase側は削除
+            window.dbRemove(replyRef);
+          }
+        });
+      }
     });
   }
 
   // 受信トレイ描画
-  function renderInbox() {
-    const inbox = getInbox();
+  function renderInbox(inboxList = []) {
     const countEl = document.getElementById('inboxCount');
     const listEl = document.getElementById('inboxList');
 
-    if (inbox.length > 0) {
-      countEl.innerText = inbox.length;
+    if (inboxList.length > 0) {
+      countEl.innerText = inboxList.length;
       countEl.style.display = 'inline-block';
+      listEl.innerHTML = inboxList.map((item) => `
+        <div class="card">
+          <div>
+            <div class="card-title">${item.title}</div>
+            <div class="card-meta">差出人: ${item.fromId}</div>
+          </div>
+          <button class="submit-btn" style="width:auto; padding:8px 12px;" onclick='openEvalModal(${JSON.stringify(item)})'>評価する</button>
+        </div>
+      `).join('');
     } else {
       countEl.style.display = 'none';
       listEl.innerHTML = '<p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">届いたお題はありません</p>';
-      return;
     }
-
-    listEl.innerHTML = inbox.map((item, idx) => `
-      <div class="card">
-        <div>
-          <div class="card-title">${item.title}</div>
-          <div class="card-meta">差出人: ${item.fromId || '友達'}</div>
-        </div>
-        <button class="submit-btn" style="width:auto; padding:8px 12px;" onclick="openEvalModal(${idx})">評価する</button>
-      </div>
-    `).join('');
   }
 
-  function openEvalModal(idx) {
-    const inbox = getInbox();
-    currentEvaluatingTopic = { ...inbox[idx], inboxIndex: idx };
-    document.getElementById('modalTopicTitle').innerText = `お題: ${currentEvaluatingTopic.title}`;
+  function openEvalModal(item) {
+    currentInboxItem = item;
+    document.getElementById('modalTopicTitle').innerText = `お題: ${item.title}`;
     modalScore = 10;
     renderModalStars();
     document.getElementById('evalModal').style.display = 'flex';
@@ -384,50 +429,52 @@
     renderStarScale('modalStarContainer', modalScore, (s) => { modalScore = s; renderModalStars(); });
   }
 
-  function submitFriendEvaluation() {
-    if (!currentEvaluatingTopic) return;
+  // 評価を返信する
+  function submitEvaluationResponse() {
+    if (!currentInboxItem) return;
 
-    // 自分のカードに保存
+    // 自分のタイムラインに記録
     const ratings = getRatings();
     ratings.unshift({
-      id: Date.now(),
-      title: currentEvaluatingTopic.title,
+      id: 'local_' + Date.now(),
+      title: currentInboxItem.title,
       myScore: modalScore,
-      friendScore: currentEvaluatingTopic.fromScore,
+      friendScore: currentInboxItem.fromScore,
       status: 'complete',
       date: new Date().toISOString().split('T')[0]
     });
     saveRatings(ratings);
 
-    // 受信トレイから削除
-    let inbox = getInbox();
-    inbox.splice(currentEvaluatingTopic.inboxIndex, 1);
-    saveInbox(inbox);
+    // 相手に返信データを送信
+    const replyRef = window.dbRef(window.db, `replies/${currentInboxItem.fromId}/${currentInboxItem.topicId}`);
+    window.dbSet(replyRef, { friendScore: modalScore }).then(() => {
+      // 自分の受信トレイから削除
+      const inboxRef = window.dbRef(window.db, `inbox/${myId}/${currentInboxItem.topicId}`);
+      window.dbRemove(inboxRef);
 
-    closeModal('evalModal');
-    renderInbox();
-    renderList();
-    alert('評価を送信・登録しました！');
+      closeModal('evalModal');
+      renderList();
+      alert('評価を返信しました！');
+    });
   }
 
   function deleteRating(id) {
-    let ratings = getRatings().filter(r => r.id !== id);
-    saveRatings(ratings);
+    saveRatings(getRatings().filter(r => r.id !== id));
     renderList();
   }
 
   function renderList() {
     const listEl = document.getElementById('ratingList');
-    let ratings = getRatings();
+    const ratings = getRatings();
 
     listEl.innerHTML = ratings.map(r => `
       <div class="card ${r.myScore === 11 || r.friendScore === 11 ? 'is-platinum' : ''}">
         <div>
           <div class="card-title">${r.title}</div>
           <div class="card-meta">
-            ${r.status === 'waiting' ? `<span style="color:var(--gold);">⏳ ${r.targetFriend || '友達'}の評価待ち...</span>` : r.date}
+            ${r.status === 'waiting' ? `<span style="color:var(--gold);">⏳ ${r.targetFriend}の評価待ち...</span>` : r.date}
           </div>
-          <button class="action-btn" onclick="deleteRating(${r.id})">削除</button>
+          <button class="action-btn" onclick="deleteRating('${r.id}')">削除</button>
         </div>
         <div class="card-scores">
           ${r.myScore !== null ? `
