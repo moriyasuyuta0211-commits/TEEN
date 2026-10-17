@@ -2,444 +2,354 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TEN - 評価して、残す。</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TEN — 評価して、残す。</title>
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlRFTiIsCiAgInNob3J0X25hbWUiOiAiVEVOIiwKICAic3RhcnRfdXJsIjogIi4vIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMTAxMDEwIiwKICAidGhlbWVfY29sb3IiOiAiIzEwMTAxMCIKfQ==">
     <style>
-        :root {
-            --bg-color: #000000;
-            --card-bg: #121212;
-            --text-primary: #ffffff;
-            --text-secondary: #888888;
-            --border-color: #222222;
-            --star-color: #ffd700;
-        }
-
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-color);
-            color: var(--text-primary);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .container {
-            width: 100%;
-            max-width: 480px;
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #0d0d0d;
+            color: #e5e5e5;
+            padding: 20px 16px 40px;
+            max-width: 500px;
+            margin: 0 auto;
         }
 
         header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: baseline;
+            margin-bottom: 24px;
             padding-bottom: 12px;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid #262626;
         }
 
         h1 {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            letter-spacing: 2px;
+            letter-spacing: 0.5px;
+            color: #ffffff;
         }
 
-        .record-count {
-            font-size: 14px;
-            color: var(--text-secondary);
+        .subtitle {
+            font-size: 13px;
+            color: #888888;
+            font-weight: normal;
+            margin-left: 6px;
         }
 
-        /* 入力フォーム */
-        .input-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
+        .count-badge {
+            font-size: 13px;
+            color: #888888;
+        }
+
+        .form-card {
+            background-color: #171717;
+            border: 1px solid #262626;
+            border-radius: 16px;
             padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            margin-bottom: 24px;
         }
 
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+        .input-group {
+            margin-bottom: 18px;
         }
 
         label {
-            font-size: 12px;
-            color: var(--text-secondary);
+            display: block;
+            font-size: 13px;
+            color: #a3a3a3;
+            margin-bottom: 8px;
+            font-weight: 500;
         }
 
-        input[type="text"], textarea {
-            background-color: #000;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            padding: 12px;
-            font-size: 16px;
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            background-color: #0d0d0d;
+            border: 1px solid #333333;
+            border-radius: 10px;
+            color: #ffffff;
+            font-size: 15px;
             outline: none;
+            transition: border-color 0.2s;
         }
 
-        input[type="text"]:focus, textarea:focus {
-            border-color: var(--text-primary);
+        input[type="text"]:focus {
+            border-color: #ffffff;
         }
 
-        textarea {
-            resize: none;
-            height: 60px;
-        }
-
-        /* 10段階星評価セレクター */
-        .star-selector {
+        .star-rating-container {
+            background-color: #0d0d0d;
+            border: 1px solid #333333;
+            border-radius: 10px;
+            padding: 12px 10px;
             display: flex;
             justify-content: space-between;
-            background-color: #000;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 12px;
+            align-items: center;
         }
 
-        .star-btn {
-            background: none;
-            border: none;
-            font-size: 20px;
+        .star-rating {
+            display: flex;
+            width: 100%;
+            justify-content: space-around;
+        }
+
+        .star {
+            font-size: 26px;
             cursor: pointer;
-            color: #444;
-            transition: transform 0.1s ease;
+            color: #444444;
+            user-select: none;
+            line-height: 1;
+            transition: color 0.15s, transform 0.1s;
         }
 
-        .star-btn.active {
-            color: var(--star-color);
+        .star.active {
+            color: #ffffff;
         }
 
-        .star-btn:hover {
+        .star:active {
             transform: scale(1.2);
         }
 
-        .submit-btn {
-            background-color: var(--text-primary);
-            color: var(--bg-color);
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+        .btn-submit {
+            width: 100%;
             padding: 14px;
+            background-color: #ffffff;
+            color: #000000;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
-            margin-top: 4px;
+            transition: opacity 0.2s;
+            margin-top: 6px;
         }
 
-        /* コントロール（検索・並び替え） */
-        .controls {
+        .btn-submit:active {
+            opacity: 0.8;
+        }
+
+        .filter-bar {
             display: flex;
-            gap: 8px;
+            gap: 10px;
+            margin-bottom: 16px;
         }
 
-        .controls input {
+        .search-input {
             flex: 1;
         }
 
         select {
-            background-color: #000;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-primary);
-            padding: 0 12px;
+            padding: 12px 14px;
+            background-color: #171717;
+            border: 1px solid #262626;
+            border-radius: 10px;
+            color: #ffffff;
             font-size: 14px;
             outline: none;
+            cursor: pointer;
         }
 
-        /* 記録リスト */
-        .record-list {
+        .list-container {
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
 
-        .record-item {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 16px 20px;
+        .item-card {
+            background-color: #171717;
+            border: 1px solid #262626;
+            border-radius: 14px;
+            padding: 16px;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
         }
 
-        .record-info {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+        .item-main {
             flex: 1;
-            padding-right: 16px;
+            padding-right: 12px;
+            overflow: hidden;
         }
 
-        .record-title {
+        .item-title {
             font-size: 16px;
             font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 6px;
+            word-break: break-all;
         }
 
-        .record-date {
+        .item-date {
             font-size: 12px;
-            color: var(--text-secondary);
+            color: #666666;
         }
 
-        .record-memo {
-            font-size: 13px;
-            color: #ccc;
-            margin-top: 2px;
-            white-space: pre-wrap;
-        }
-
-        .record-stars {
-            font-size: 14px;
-            letter-spacing: 1px;
-            color: var(--star-color);
-        }
-
-        .record-score-num {
-            font-size: 11px;
-            color: var(--text-secondary);
-            margin-left: 4px;
-        }
-
-        .record-right {
+        .item-side {
             display: flex;
             flex-direction: column;
             align-items: flex-end;
             gap: 8px;
         }
 
-        .action-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            font-size: 12px;
-            cursor: pointer;
+        .score-badge {
+            font-size: 16px;
+            font-weight: 700;
+            color: #ffffff;
+            letter-spacing: 0.5px;
         }
 
-        .action-btn:hover {
-            color: var(--text-primary);
+        .btn-delete {
+            background: none;
+            border: none;
+            color: #ef4444;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 2px 4px;
         }
 
         .empty-state {
             text-align: center;
-            color: var(--text-secondary);
             padding: 40px 0;
+            color: #555555;
             font-size: 14px;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <header>
-            <h1>TEN</h1>
-            <div class="record-count" id="recordCount">0 記録</div>
-        </header>
+    <header>
+        <div>
+            <h1>TEN<span class="subtitle">— 評価して、残す。</span></h1>
+        </div>
+        <div class="count-badge" id="totalCount">0 記録</div>
+    </header>
 
-        <!-- 入力エリア -->
-        <div class="input-card">
-            <div class="form-group">
-                <label>対象名</label>
-                <input type="text" id="targetName" placeholder="例：雨の日の散歩、ある映画など">
-            </div>
+    <div class="form-card">
+        <div class="input-group">
+            <label for="titleInput">対象名</label>
+            <input type="text" id="titleInput" placeholder="例：雨の日の散歩、ある映画など">
+        </div>
 
-            <div class="form-group">
-                <label>評価 (1〜10)</label>
-                <div class="star-selector" id="starSelector">
-                    <!-- 星ボタンをJSで生成 -->
+        <div class="input-group">
+            <label>評価</label>
+            <div class="star-rating-container">
+                <div class="star-rating" id="starRating">
+                    <span class="star" data-value="1">★</span>
+                    <span class="star" data-value="2">★</span>
+                    <span class="star" data-value="3">★</span>
+                    <span class="star" data-value="4">★</span>
+                    <span class="star" data-value="5">★</span>
+                    <span class="star" data-value="6">★</span>
+                    <span class="star" data-value="7">★</span>
+                    <span class="star" data-value="8">★</span>
+                    <span class="star" data-value="9">★</span>
+                    <span class="star" data-value="10">★</span>
                 </div>
             </div>
-
-            <div class="form-group">
-                <label>メモ（任意）</label>
-                <textarea id="targetMemo" placeholder="一言メモ..."></textarea>
-            </div>
-
-            <button class="submit-btn" id="submitBtn">記録する</button>
         </div>
 
-        <!-- 検索・並び替え -->
-        <div class="controls">
-            <input type="text" id="searchInput" placeholder="対象名で検索...">
-            <select id="sortSelect">
-                <option value="desc">新しい順</option>
-                <option value="asc">古い順</option>
-            </select>
-        </div>
-
-        <!-- リスト表示エリア -->
-        <div class="record-list" id="recordList">
-            <!-- 記録アイテムがここに挿入されます -->
-        </div>
+        <button class="btn-submit" id="saveBtn">記録する</button>
     </div>
 
-    <script>
-        let records = JSON.parse(localStorage.getItem('ten_records')) || [];
-        let selectedScore = 10; // デフォルトで10点（10個の星）
+    <div class="filter-bar">
+        <input type="text" id="searchInput" class="search-input" placeholder="対象名で検索...">
+        <select id="sortSelect">
+            <option value="desc">新しい順</option>
+            <option value="asc">古い順</option>
+            <option value="score-desc">評価が高い順</option>
+            <option value="score-asc">評価が低い順</option>
+        </select>
+    </div>
 
-        const starSelector = document.getElementById('starSelector');
-        const targetNameInput = document.getElementById('targetName');
-        const targetMemoInput = document.getElementById('targetMemo');
-        const submitBtn = document.getElementById('submitBtn');
+    <div class="list-container" id="recordList"></div>
+
+    <script>
+        let currentScore = 10;
+        let records = JSON.parse(localStorage.getItem('ten_app_records') || '[]');
+
+        const starRating = document.getElementById('starRating');
+        const stars = starRating.querySelectorAll('.star');
+        const titleInput = document.getElementById('titleInput');
+        const saveBtn = document.getElementById('saveBtn');
         const recordList = document.getElementById('recordList');
-        const recordCount = document.getElementById('recordCount');
+        const totalCount = document.getElementById('totalCount');
         const searchInput = document.getElementById('searchInput');
         const sortSelect = document.getElementById('sortSelect');
 
-        // 星セレクターの生成
-        function initStarSelector() {
-            starSelector.innerHTML = '';
-            for (let i = 1; i <= 10; i++) {
-                const btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = `star-btn ${i <= selectedScore ? 'active' : ''}`;
-                btn.textContent = i <= selectedScore ? '★' : '☆';
-                btn.addEventListener('click', () => {
-                    selectedScore = i;
-                    updateStarSelector();
-                });
-                starSelector.appendChild(btn);
-            }
-        }
-
-        function updateStarSelector() {
-            const buttons = starSelector.querySelectorAll('.star-btn');
-            buttons.forEach((btn, index) => {
-                const scoreValue = index + 1;
-                if (scoreValue <= selectedScore) {
-                    btn.textContent = '★';
-                    btn.classList.add('active');
+        function updateStars(val) {
+            currentScore = val;
+            stars.forEach(star => {
+                const starVal = parseInt(star.getAttribute('data-value'));
+                if (starVal <= val) {
+                    star.classList.add('active');
                 } else {
-                    btn.textContent = '☆';
-                    btn.classList.remove('active');
+                    star.classList.remove('active');
                 }
             });
         }
 
-        // 日付フォーマット
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            const y = date.getFullYear();
-            const m = String(date.getMonth() + 1).padStart(2, '0');
-            const d = String(date.getDate()).padStart(2, '0');
-            return `${y}/${m}/${d}`;
-        }
+        updateStars(10);
 
-        // データの保存
-        function saveRecords() {
-            localStorage.setItem('ten_records', JSON.stringify(records));
-        }
-
-        // 星文字列の生成
-        function getStarString(score) {
-            return '★'.repeat(score) + '☆'.repeat(10 - score);
-        }
-
-        // レンダリング
-        function render() {
-            const keyword = searchInput.value.toLowerCase();
-            const sortOrder = sortSelect.value;
-
-            let filtered = records.filter(r => r.name.toLowerCase().includes(keyword));
-
-            filtered.sort((a, b) => {
-                if (sortOrder === 'desc') {
-                    return new Date(b.date) - new Date(a.date);
-                } else {
-                    return new Date(a.date) - new Date(b.date);
-                }
+        stars.forEach(star => {
+            star.addEventListener('click', () => {
+                const val = parseInt(star.getAttribute('data-value'));
+                updateStars(val);
             });
+        });
 
-            recordCount.textContent = `${records.length} 記録`;
-
-            if (filtered.length === 0) {
-                recordList.innerHTML = `<div class="empty-state">記録がありません</div>`;
-                return;
-            }
-
-            recordList.innerHTML = '';
-            filtered.forEach(record => {
-                const item = document.createElement('div');
-                item.className = 'record-item';
-
-                item.innerHTML = `
-                    <div class="record-info">
-                        <div class="record-title">${escapeHtml(record.name)}</div>
-                        <div class="record-date">${formatDate(record.date)}</div>
-                        ${record.memo ? `<div class="record-memo">${escapeHtml(record.memo)}</div>` : ''}
-                    </div>
-                    <div class="record-right">
-                        <div class="record-stars">${getStarString(record.score)}<span class="record-score-num">${record.score}/10</span></div>
-                        <button class="action-btn" onclick="deleteRecord('${record.id}')">削除</button>
-                    </div>
-                `;
-                recordList.appendChild(item);
-            });
-        }
-
-        // HTMLエスケープ
-        function escapeHtml(str) {
-            return str.replace(/[&<>"'']/g, match => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
-            }[match]));
-        }
-
-        // 記録の追加
-        submitBtn.addEventListener('click', () => {
-            const name = targetNameInput.value.trim();
-            if (!name) {
-                alert('対象名を入力してください。');
+        saveBtn.addEventListener('click', () => {
+            const title = titleInput.value.trim();
+            if (!title) {
+                alert('対象名を入力してください');
                 return;
             }
 
             const newRecord = {
-                id: Date.now().toString(),
-                name: name,
-                score: selectedScore,
-                memo: targetMemoInput.value.trim(),
-                date: new Date().toISOString()
+                id: Date.now(),
+                title: title,
+                score: currentScore,
+                date: new Date().toISOString().split('T')[0]
             };
 
-            records.push(newRecord);
+            records.unshift(newRecord);
             saveRecords();
-
-            // フォームリセット
-            targetNameInput.value = '';
-            targetMemoInput.value = '';
-            selectedScore = 10;
-            initStarSelector();
-            render();
+            titleInput.value = '';
+            updateStars(10);
+            renderRecords();
         });
 
-        // 記録の削除
-        window.deleteRecord = function(id) {
+        function saveRecords() {
+            localStorage.setItem('ten_app_records', JSON.stringify(records));
+        }
+
+        function deleteRecord(id) {
             if (confirm('この記録を削除しますか？')) {
                 records = records.filter(r => r.id !== id);
                 saveRecords();
-                render();
+                renderRecords();
             }
-        };
+        }
 
-        searchInput.addEventListener('input', render);
-        sortSelect.addEventListener('change', render);
+        function renderRecords() {
+            let filtered = records.filter(r => 
+                r.title.toLowerCase().includes(searchInput.value.toLowerCase())
+            );
 
-        // 初期化
-        initStarSelector();
-        render();
-    </script>
-</body>
-</html>
+            const sortVal = sortSelect.value;
+            if (sortVal === 'desc') {
+                filtered.sort((a, b) => b.id - a.id);
+            } else if (sortVal === 'asc') {
+                filtered.sort((a, b) => a.id - b.id);
+            } else if (sortVal === 'score-desc') {
+                filtered.sort((a, b) => b.score - a.score);
+            } else if (sortVal === 'score-asc') {
+                filtered.sort((a, b
