@@ -149,21 +149,21 @@
             color: #ffffff;
         }
 
-        /* 11番目（プラチナ）：他の星と完全に高さを揃えた枠付きデザイン */
+        /* 11番目（プラチナ）：星の文字自体に破線のアウトライン（枠線）を持たせる */
         .star-wrapper.platinum .star {
             border: 1px dashed #737373;
             border-radius: 4px;
-            padding: 2px 3px;
-            background: #1f1f23;
-            color: #777777;
+            padding: 1px 3px;
+            background: #161619;
+            color: #666666;
         }
 
         .star-wrapper.platinum.active .star {
             border-color: #ffffff;
-            background: #333338;
+            background: #2a2a30;
             color: #f1f5f9;
             text-shadow: 0 0 6px rgba(241, 245, 249, 0.6);
-            box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.15);
         }
 
         .star-wrapper:active .star {
@@ -319,7 +319,7 @@
                     <div class="star-wrapper" data-value="8"><span class="star">★</span><span class="star-num">8</span></div>
                     <div class="star-wrapper" data-value="9"><span class="star">★</span><span class="star-num">9</span></div>
                     <div class="star-wrapper" data-value="10"><span class="star">★</span><span class="star-num">10</span></div>
-                    <!-- 11番目：プラチナ星（高さを完全に統一） -->
+                    <!-- 11番目：プラチナ星（星自体の枠線） -->
                     <div class="star-wrapper platinum" data-value="11"><span class="star">★</span><span class="star-num">11</span></div>
                 </div>
             </div>
@@ -333,6 +333,7 @@
         <select id="sortSelect">
             <option value="desc">新しい順</option>
             <option value="asc">古い順</option>
+            <option value="platinum-only">★11/10</option>
             <option value="score-desc">評価が高い順</option>
             <option value="score-asc">評価が低い順</option>
         </select>
@@ -353,12 +354,6 @@
         const totalCount = document.getElementById('totalCount');
         const searchInput = document.getElementById('searchInput');
         const sortSelect = document.getElementById('sortSelect');
-
-        function triggerHaptic() {
-            if (navigator.vibrate) {
-                navigator.vibrate(15);
-            }
-        }
 
         function updateStars(val) {
             currentScore = val;
@@ -391,7 +386,6 @@
         starWrappers.forEach(wrapper => {
             wrapper.addEventListener('click', () => {
                 const val = parseInt(wrapper.getAttribute('data-value'));
-                triggerHaptic();
                 updateStars(val);
             });
         });
@@ -399,11 +393,9 @@
         saveBtn.addEventListener('click', () => {
             const title = titleInput.value.trim();
             if (!title) {
-                alert('評価対象を入力してください');
+                alert('対象名を入力してください');
                 return;
             }
-
-            triggerHaptic();
 
             const newRecord = {
                 id: Date.now(),
@@ -425,7 +417,6 @@
 
         function deleteRecord(id) {
             if (confirm('この記録を削除しますか？')) {
-                triggerHaptic();
                 records = records.filter(r => r.id !== id);
                 saveRecords();
                 renderRecords();
@@ -438,7 +429,9 @@
             );
 
             const sortVal = sortSelect.value;
-            if (sortVal === 'desc') {
+            if (sortVal === 'platinum-only') {
+                filtered = filtered.filter(r => r.score === 11);
+            } else if (sortVal === 'desc') {
                 filtered.sort((a, b) => b.id - a.id);
             } else if (sortVal === 'asc') {
                 filtered.sort((a, b) => a.id - b.id);
@@ -474,18 +467,6 @@
                     </div>
                 `;
             }).join('');
-        }
-
-        function escapeHtml(str) {
-            return str.replace(/[&<>"']/g, function(m) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#039;'
-                }[m];
-            });
         }
 
         searchInput.addEventListener('input', renderRecords);
