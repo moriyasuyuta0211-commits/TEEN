@@ -144,11 +144,11 @@
   <div id="tab-timeline" class="tab-content active">
     <div class="input-card">
       <div class="input-group">
-        <label>曲名 / アーティスト名</label>
+        <label>曲名 / アーティスト名 (任意)</label>
         <input type="text" id="itemTitle" placeholder="例：曲名 - アーティスト名" style="margin-top: 6px;">
       </div>
       <div class="input-group">
-        <label>楽曲URL (Apple Music / Spotify など)</label>
+        <label>楽曲URL (任意)</label>
         <input type="text" id="itemUrl" placeholder="https://open.spotify.com/... や music.apple.com/..." style="margin-top: 6px;">
       </div>
       <div class="input-group">
@@ -220,12 +220,12 @@
     </div>
 
     <div class="input-group">
-      <label>曲名 / アーティスト名</label>
+      <label>曲名 / アーティスト名 (任意)</label>
       <input type="text" id="sendTopicTitleInput" placeholder="例：曲名 - アーティスト名" style="margin-top: 6px;">
     </div>
 
     <div class="input-group">
-      <label>楽曲URL (Apple Music / Spotify)</label>
+      <label>楽曲URL (任意)</label>
       <input type="text" id="sendTopicUrlInput" placeholder="URLをペースト..." style="margin-top: 6px;">
     </div>
 
@@ -374,7 +374,6 @@
     }
   }
 
-  // URLからサービス名（Spotify / Apple Music）とリンク要素を生成
   function getMusicLinkHtml(url) {
     if (!url) return '';
     let label = '曲を聴く';
@@ -408,12 +407,14 @@
   function addMyRating() {
     const title = document.getElementById('itemTitle').value.trim();
     const url = document.getElementById('itemUrl').value.trim();
-    if (!title) return alert('曲名/アーティスト名を入力してください');
+    if (!title && !url) return alert('曲名/アーティスト名、または楽曲URLのいずれかを入力してください');
+
+    const displayTitle = title || '無題の曲';
 
     const ratings = getRatings();
     ratings.unshift({
       id: 'local_' + Date.now(),
-      title: title,
+      title: displayTitle,
       url: url,
       myScore: selectedScore,
       friendScore: null,
@@ -497,7 +498,6 @@
     const friends = getFriends();
     const select = document.getElementById('friendSelect');
     
-    // 入力エリアに入っていたテキストがあればそのまま初期化値として利用
     document.getElementById('sendTopicTitleInput').value = document.getElementById('itemTitle').value.trim();
     document.getElementById('sendTopicUrlInput').value = document.getElementById('itemUrl').value.trim();
     
@@ -521,15 +521,16 @@
 
     const title = document.getElementById('sendTopicTitleInput').value.trim();
     const url = document.getElementById('sendTopicUrlInput').value.trim();
-    if (!title) return alert('曲名/アーティスト名を入力してください');
+    if (!title && !url) return alert('曲名/アーティスト名、または楽曲URLのいずれかを入力してください');
 
+    const displayTitle = title || '無題の曲';
     const topicId = 'topic_' + Date.now();
     const targetName = getFriendName(friendId);
     
     const ratings = getRatings();
     ratings.unshift({
       id: topicId,
-      title: title,
+      title: displayTitle,
       url: url,
       myScore: null,
       friendScore: null,
@@ -545,7 +546,7 @@
     const inboxRef = window.dbRef(window.db, `inbox/${friendId}/${topicId}`);
     window.dbSet(inboxRef, {
       topicId: topicId,
-      title: title,
+      title: displayTitle,
       url: url,
       fromId: myId,
       fromName: myName
