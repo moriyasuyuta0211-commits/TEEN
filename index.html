@@ -113,6 +113,7 @@
             display: flex;
             width: 100%;
             justify-content: space-between;
+            align-items: center;
             gap: 2px;
         }
 
@@ -149,13 +150,21 @@
             color: #ffffff;
         }
 
-        /* 11番目（プラチナ）：他の星と完全にサイズを揃えたまま、上品なプラチナカラーに */
+        /* 10と11の間の仕切り線 */
+        .star-divider {
+            width: 1px;
+            height: 32px;
+            background-color: #333333;
+            margin: 0 4px;
+        }
+
+        /* 11番目（プラチナ）：上品なプラチナカラー */
         .star-wrapper.platinum .star {
-            color: #71717a; /* 通常時は少し明るめのガンメタル */
+            color: #71717a;
         }
 
         .star-wrapper.platinum.active .star {
-            color: #cbd5e1; /* アクティブ時は上品なプラチナシルバーの輝き */
+            color: #cbd5e1;
             text-shadow: 0 0 8px rgba(203, 213, 225, 0.7);
         }
 
@@ -316,7 +325,9 @@
                     <div class="star-wrapper" data-value="8"><span class="star">★</span><span class="star-num">8</span></div>
                     <div class="star-wrapper" data-value="9"><span class="star">★</span><span class="star-num">9</span></div>
                     <div class="star-wrapper" data-value="10"><span class="star">★</span><span class="star-num">10</span></div>
-                    <!-- 11番目：プラチナ星（カラーと輝きで特別感を演出、サイズ完全一致） -->
+                    <!-- 10と11の間の仕切り線 -->
+                    <div class="star-divider"></div>
+                    <!-- 11番目：プラチナ星 -->
                     <div class="star-wrapper platinum" data-value="11"><span class="star">★</span><span class="star-num">11</span></div>
                 </div>
             </div>
