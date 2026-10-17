@@ -22,7 +22,6 @@
     header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
     h1 { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
     
-    /* モノトーン化されたIDバッジ */
     .my-id-badge { background: #000; border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--text); display: flex; align-items: center; gap: 6px; cursor: pointer; }
 
     /* タブ切り替え */
@@ -43,9 +42,9 @@
     .score-display-text { font-size: 14px; font-weight: 700; color: #fff; }
     .score-display-text.platinum { color: var(--gold); }
 
-    input[type="text"], select { width: 100%; background: #000; border: 1px solid var(--border); border-radius: 6px; color: #fff; padding: 10px; font-size: 14px; }
+    input[type="text"], select, textarea { width: 100%; background: #000; border: 1px solid var(--border); border-radius: 6px; color: #fff; padding: 10px; font-size: 14px; resize: none; }
 
-    /* 星＋数字 UI（等間隔・区切り線なし） */
+    /* 星＋数字 UI（10と11の間に棒線） */
     .star-scale-row { display: flex; align-items: flex-end; justify-content: space-between; padding: 6px 0; }
     .star-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; background: none; border: none; }
     .star-icon { font-size: 18px; color: #333; transition: color 0.15s; margin-bottom: 4px; }
@@ -55,10 +54,11 @@
     .star-num { font-size: 10px; font-weight: 700; color: #555; }
     .star-item.active .star-num { color: var(--text-dim); }
     .star-item.platinum.active .star-num { color: var(--gold); }
+    
+    .divider { width: 1px; height: 28px; background: var(--border); margin: 0 4px; align-self: center; }
 
     .btn-group { display: flex; gap: 8px; margin-top: 16px; }
     .submit-btn { flex: 1; background: var(--text); color: #000; font-weight: 600; border: none; border-radius: 6px; padding: 12px; font-size: 13px; cursor: pointer; }
-    /* モノトーン化されたシェアボタン */
     .share-btn { flex: 1; background: transparent; color: var(--text); border: 1px solid var(--border); font-weight: 600; border-radius: 6px; padding: 12px; font-size: 13px; cursor: pointer; }
 
     /* リスト */
@@ -71,6 +71,7 @@
     .card-score.platinum { color: var(--gold); }
     .friend-score { font-size: 12px; color: var(--text); margin-top: 2px; font-weight: 600; }
     .friend-score.platinum { color: var(--gold); }
+    .card-memo { font-size: 11px; color: var(--text-dim); margin-top: 4px; font-style: italic; }
     
     .action-btn { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; text-decoration: underline; margin-top: 6px; display: inline-block; }
 
@@ -186,7 +187,7 @@
   </div>
 </div>
 
-<!-- お題送信モーダル（自分の評価なし、お題を送るだけ） -->
+<!-- お題送信モーダル -->
 <div class="modal-overlay" id="sendModal">
   <div class="modal-content">
     <div class="modal-title">お題を送信</div>
@@ -201,19 +202,27 @@
   </div>
 </div>
 
-<!-- 評価返信モーダル -->
+<!-- 評価返信モーダル（メモ欄付き） -->
 <div class="modal-overlay" id="evalModal">
-  <div class="modal-content">
-    <div class="modal-title" id="modalTopicTitle">お題の評価</div>
-    <p style="font-size:12px; color:var(--text-dim); margin-bottom:12px;">評価を選んで返信してください</p>
+  <div class="modal-content" style="text-align: left;">
+    <div class="modal-title" style="text-align: center;" id="modalTopicTitle">お題の評価</div>
+    <p style="font-size:12px; color:var(--text-dim); margin-bottom:12px; text-align: center;">評価を選んで返信してください</p>
+    
     <div class="label-row" style="margin-bottom: 8px;">
       <label>評価</label>
       <div class="score-display-text" id="modalScoreValueDisplay">8 / 10</div>
     </div>
-    <div class="star-scale-row" id="modalStarScaleContainer" style="margin-bottom:20px;"></div>
-    <button class="submit-btn" onclick="submitEvaluationResponse()">評価を確定して返信</button>
-    <br>
-    <button class="action-btn" onclick="closeModal('evalModal')" style="margin-top: 10px;">キャンセル</button>
+    <div class="star-scale-row" id="modalStarScaleContainer" style="margin-bottom:16px;"></div>
+
+    <div class="input-group">
+      <label>メモ（一言感想など）</label>
+      <textarea id="evalMemoInput" rows="2" placeholder="感想があれば入力..." style="margin-top: 6px;"></textarea>
+    </div>
+
+    <div style="text-align: center; margin-top: 16px;">
+      <button class="submit-btn" onclick="submitEvaluationResponse()" style="width: 100%; margin-bottom: 8px;">評価を確定して返信</button>
+      <button class="action-btn" onclick="closeModal('evalModal')">キャンセル</button>
+    </div>
   </div>
 </div>
 
@@ -294,7 +303,7 @@
     });
   }
 
-  // 1〜11の星UI（等間隔・区切り線なし）
+  // 1〜11の星UI（10と11の間に棒線を配置）
   function renderStarScaleUI(containerId, displayId, currentScore, onSelect) {
     const container = document.getElementById(containerId);
     const displayEl = document.getElementById(displayId);
@@ -309,6 +318,12 @@
     }
 
     for (let i = 1; i <= 11; i++) {
+      if (i === 11) {
+        const div = document.createElement('div');
+        div.className = 'divider';
+        container.appendChild(div);
+      }
+
       const item = document.createElement('button');
       item.type = 'button';
       item.className = `star-item ${i === 11 ? 'platinum' : ''} ${i <= currentScore ? 'active' : ''}`;
@@ -331,7 +346,6 @@
   function getFriends() { return JSON.parse(localStorage.getItem('ten_friends') || '[]'); }
   function saveFriends(data) { localStorage.setItem('ten_friends', JSON.stringify(data)); }
 
-  // フレンド名取得ヘルパー
   function getFriendName(fId) {
     const friends = getFriends();
     const found = friends.find(f => (typeof f === 'object' ? f.id : f) === fId);
@@ -351,6 +365,7 @@
       title: title,
       myScore: selectedScore,
       friendScore: null,
+      memo: '',
       status: 'complete',
       date: new Date().toISOString().split('T')[0]
     });
@@ -446,7 +461,6 @@
 
   function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
-  // お題送信（自分の評価は含めず、純粋にお題だけを送る）
   function sendTopicToFriend() {
     const title = document.getElementById('itemTitle').value.trim();
     const friendId = document.getElementById('friendSelect').value;
@@ -461,6 +475,7 @@
       title: title,
       myScore: null,
       friendScore: null,
+      memo: '',
       status: 'waiting',
       targetFriend: friendId,
       targetName: targetName,
@@ -500,6 +515,7 @@
           const reply = snapshot.val();
           if (reply) {
             r.friendScore = reply.friendScore;
+            r.memo = reply.memo || '';
             r.status = 'complete';
             saveRatings(ratings);
             renderList();
@@ -523,7 +539,7 @@
             <div class="card-title">${item.title}</div>
             <div class="card-meta">差出人: ${item.fromName || item.fromId}</div>
           </div>
-          <button class="submit-btn" style="width:auto; padding:8px 12px;" onclick='openEvalModal(${JSON.stringify(item)})'>評価する</button>
+          <button class="submit-btn" style="width:auto; padding:6px 12px; font-size:12px;" onclick='openEvalModal(${JSON.stringify(item)})'>評価する</button>
         </div>
       `).join('');
     } else {
@@ -536,6 +552,7 @@
     currentInboxItem = item;
     document.getElementById('modalTopicTitle').innerText = `お題: ${item.title}`;
     modalScore = 8;
+    document.getElementById('evalMemoInput').value = '';
     renderModalScale();
     document.getElementById('evalModal').style.display = 'flex';
   }
@@ -543,21 +560,22 @@
   function submitEvaluationResponse() {
     if (!currentInboxItem) return;
 
+    const memoText = document.getElementById('evalMemoInput').value.trim();
     const ratings = getRatings();
     
-    // 自分が送ったお題に対する相手からの返信（自分が送信者だった場合）
     const existingIndex = ratings.findIndex(r => r.id === currentInboxItem.topicId);
     
     if (existingIndex !== -1) {
       ratings[existingIndex].friendScore = modalScore;
+      ratings[existingIndex].memo = memoText;
       ratings[existingIndex].status = 'complete';
     } else {
-      // 相手から送られてきたお題を初めて自分が評価する場合
       ratings.unshift({
         id: currentInboxItem.topicId,
         title: currentInboxItem.title,
         myScore: modalScore,
         friendScore: null,
+        memo: memoText,
         status: 'complete',
         date: new Date().toISOString().split('T')[0]
       });
@@ -565,7 +583,10 @@
     saveRatings(ratings);
 
     const replyRef = window.dbRef(window.db, `replies/${currentInboxItem.fromId}/${currentInboxItem.topicId}`);
-    window.dbSet(replyRef, { friendScore: modalScore }).then(() => {
+    window.dbSet(replyRef, { 
+      friendScore: modalScore,
+      memo: memoText
+    }).then(() => {
       const inboxRef = window.dbRef(window.db, `inbox/${myId}/${currentInboxItem.topicId}`);
       window.dbRemove(inboxRef);
 
@@ -602,6 +623,7 @@
             <div class="card-meta">
               ${r.status === 'waiting' ? `<span style="color:var(--text);">⏳ ${targetNameDisplay}の評価待ち...</span>` : r.date}
             </div>
+            ${r.memo ? `<div class="card-memo">“${r.memo}”</div>` : ''}
             <button class="action-btn" onclick="deleteRating('${r.id}')">削除</button>
           </div>
           <div class="card-scores">
