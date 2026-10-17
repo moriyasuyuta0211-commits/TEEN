@@ -352,4 +352,46 @@
             } else if (sortVal === 'score-desc') {
                 filtered.sort((a, b) => b.score - a.score);
             } else if (sortVal === 'score-asc') {
-                filtered.sort((a, b
+                filtered.sort((a, b) => a.score - b.score);
+            }
+
+            totalCount.textContent = `${records.length} 記録`;
+
+            if (filtered.length === 0) {
+                recordList.innerHTML = '<div class="empty-state">記録はありません</div>';
+                return;
+            }
+
+            recordList.innerHTML = filtered.map(r => `
+                <div class="item-card">
+                    <div class="item-main">
+                        <div class="item-title">${escapeHtml(r.title)}</div>
+                        <div class="item-date">${r.date}</div>
+                    </div>
+                    <div class="item-side">
+                        <div class="score-badge">★ ${r.score}/10</div>
+                        <button class="btn-delete" onclick="deleteRecord(${r.id})">削除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+
+        searchInput.addEventListener('input', renderRecords);
+        sortSelect.addEventListener('change', renderRecords);
+
+        renderRecords();
+    </script>
+</body>
+</html>
