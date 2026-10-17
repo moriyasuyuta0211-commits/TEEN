@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TEN - 評価して、残す。</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --card-bg: #121212;
+            --text-primary: #ffffff;
+            --text-secondary: #888888;
+            --border-color: #222222;
+            --star-color: #ffd700;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .record-count {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* 入力フォーム */
+        .input-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        input[type="text"], textarea {
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            padding: 12px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            border-color: var(--text-primary);
+        }
+
+        textarea {
+            resize: none;
+            height: 60px;
+        }
+
+        /* 10段階星評価セレクター */
+        .star-selector {
+            display: flex;
+            justify-content: space-between;
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .star-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #444;
+            transition: transform 0.1s ease;
+        }
+
+        .star-btn.active {
+            color: var(--star-color);
+        }
+
+        .star-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .submit-btn {
+            background-color: var(--text-primary);
+            color: var(--bg-color);
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            padding: 14px;
+            cursor: pointer;
+            margin-top: 4px;
+        }
+
+        /* コントロール（検索・並び替え） */
+        .controls {
+            display: flex;
+            gap: 8px;
+        }
+
+        .controls input {
+            flex: 1;
+        }
+
+        select {
+            background-color: #000;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            padding: 0 12px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        /* 記録リスト */
+        .record-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .record-item {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .record-info {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            flex: 1;
+            padding-right: 16px;
+        }
+
+        .record-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .record-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .record-memo {
+            font-size: 13px;
+            color: #ccc;
+            margin-top: 2px;
+            white-space: pre-wrap;
+        }
+
+        .record-stars {
+            font-size: 14px;
+            letter-spacing: 1px;
+            color: var(--star-color);
+        }
+
+        .record-score-num {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-left: 4px;
+        }
+
+        .record-right {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .action-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--text-secondary);
+            padding: 40px 0;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>TEN</h1>
+            <div class="record-count" id="recordCount">0 記録</div>
+        </header>
+
+        <!-- 入力エリア -->
+        <div class="input-card">
+            <div class="form-group">
+                <label>対象名</label>
+                <input type="text" id="targetName" placeholder="例：雨の日の散歩、ある映画など">
+            </div>
+
+            <div class="form-group">
+                <label>評価 (1〜10)</label>
+                <div class="star-selector" id="starSelector">
+                    <!-- 星ボタンをJSで生成 -->
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>メモ（任意）</label>
+                <textarea id="targetMemo" placeholder="一言メモ..."></textarea>
+            </div>
+
+            <button class="submit-btn" id="submitBtn">記録する</button>
+        </div>
+
+        <!-- 検索・並び替え -->
+        <div class="controls">
+            <input type="text" id="searchInput" placeholder="対象名で検索...">
+            <select id="sortSelect">
+                <option value="desc">新しい順</option>
+                <option value="asc">古い順</option>
+            </select>
+        </div>
+
+        <!-- リスト表示エリア -->
+        <div class="record-list" id="recordList">
+            <!-- 記録アイテムがここに挿入されます -->
+        </div>
+    </div>
+
+    <script>
+        let records = JSON.parse(localStorage.getItem('ten_records')) || [];
+        let selectedScore = 10; // デフォルトで10点（10個の星）
+
+        const starSelector = document.getElementById('starSelector');
+        const targetNameInput = document.getElementById('targetName');
+        const targetMemoInput = document.getElementById('targetMemo');
+        const submitBtn = document.getElementById('submitBtn');
+        const recordList = document.getElementById('recordList');
+        const recordCount = document.getElementById('recordCount');
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+
+        // 星セレクターの生成
+        function initStarSelector() {
+            starSelector.innerHTML = '';
+            for (let i = 1; i <= 10; i++) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `star-btn ${i <= selectedScore ? 'active' : ''}`;
+                btn.textContent = i <= selectedScore ? '★' : '☆';
+                btn.addEventListener('click', () => {
+                    selectedScore = i;
+                    updateStarSelector();
+                });
+                starSelector.appendChild(btn);
+            }
+        }
+
+        function updateStarSelector() {
+            const buttons = starSelector.querySelectorAll('.star-btn');
+            buttons.forEach((btn, index) => {
+                const scoreValue = index + 1;
+                if (scoreValue <= selectedScore) {
+                    btn.textContent = '★';
+                    btn.classList.add('active');
+                } else {
+                    btn.textContent = '☆';
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        // 日付フォーマット
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return `${y}/${m}/${d}`;
+        }
+
+        // データの保存
+        function saveRecords() {
+            localStorage.setItem('ten_records', JSON.stringify(records));
+        }
+
+        // 星文字列の生成
+        function getStarString(score) {
+            return '★'.repeat(score) + '☆'.repeat(10 - score);
+        }
+
+        // レンダリング
+        function render() {
+            const keyword = searchInput.value.toLowerCase();
+            const sortOrder = sortSelect.value;
+
+            let filtered = records.filter(r => r.name.toLowerCase().includes(keyword));
+
+            filtered.sort((a, b) => {
+                if (sortOrder === 'desc') {
+                    return new Date(b.date) - new Date(a.date);
+                } else {
+                    return new Date(a.date) - new Date(b.date);
+                }
+            });
+
+            recordCount.textContent = `${records.length} 記録`;
+
+            if (filtered.length === 0) {
+                recordList.innerHTML = `<div class="empty-state">記録がありません</div>`;
+                return;
+            }
+
+            recordList.innerHTML = '';
+            filtered.forEach(record => {
+                const item = document.createElement('div');
+                item.className = 'record-item';
+
+                item.innerHTML = `
+                    <div class="record-info">
+                        <div class="record-title">${escapeHtml(record.name)}</div>
+                        <div class="record-date">${formatDate(record.date)}</div>
+                        ${record.memo ? `<div class="record-memo">${escapeHtml(record.memo)}</div>` : ''}
+                    </div>
+                    <div class="record-right">
+                        <div class="record-stars">${getStarString(record.score)}<span class="record-score-num">${record.score}/10</span></div>
+                        <button class="action-btn" onclick="deleteRecord('${record.id}')">削除</button>
+                    </div>
+                `;
+                recordList.appendChild(item);
+            });
+        }
+
+        // HTMLエスケープ
+        function escapeHtml(str) {
+            return str.replace(/[&<>"'']/g, match => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[match]));
+        }
+
+        // 記録の追加
+        submitBtn.addEventListener('click', () => {
+            const name = targetNameInput.value.trim();
+            if (!name) {
+                alert('対象名を入力してください。');
+                return;
+            }
+
+            const newRecord = {
+                id: Date.now().toString(),
+                name: name,
+                score: selectedScore,
+                memo: targetMemoInput.value.trim(),
+                date: new Date().toISOString()
+            };
+
+            records.push(newRecord);
+            saveRecords();
+
+            // フォームリセット
+            targetNameInput.value = '';
+            targetMemoInput.value = '';
+            selectedScore = 10;
+            initStarSelector();
+            render();
+        });
+
+        // 記録の削除
+        window.deleteRecord = function(id) {
+            if (confirm('この記録を削除しますか？')) {
+                records = records.filter(r => r.id !== id);
+                saveRecords();
+                render();
+            }
+        };
+
+        searchInput.addEventListener('input', render);
+        sortSelect.addEventListener('change', render);
+
+        // 初期化
+        initStarSelector();
+        render();
+    </script>
+</body>
+</html>
