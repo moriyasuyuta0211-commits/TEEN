@@ -1,517 +1,243 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TEN — 評価して、残す。</title>
-    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogIlRFTiIsCiAgInNob3J0X25hbWUiOiAiVEVOIiwKICAic3RhcnRfdXJsIjogIi4vIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMTAxMDEwIiwKICAidGhlbWVfY29sb3IiOiAiIzEwMTAxMCIKfQ==">
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TEN — 評価して、残す。</title>
+  <link rel="apple-touch-icon" href="icon.png">
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --card-bg: #171717;
+      --border: #262626;
+      --text: #e5e5e5;
+      --text-dim: #737373;
+      --gold: #b6a078;
+      --gold-glow: rgba(182, 160, 120, 0.2);
+    }
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #0d0d0d;
-            color: #e5e5e5;
-            padding: 20px 16px 40px;
-            max-width: 500px;
-            margin: 0 auto;
-        }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); display: flex; justify-content: center; min-height: 100vh; padding: 20px 16px; }
+    .app-container { width: 100%; max-width: 480px; }
 
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 24px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid #262626;
-        }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+    h1 { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+    .badge-count { font-size: 12px; color: var(--text-dim); }
 
-        h1 {
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            color: #ffffff;
-        }
+    /* 受信エリア */
+    .receive-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 20px; display: flex; gap: 8px; }
+    .receive-box input { flex: 1; background: #000; border: 1px solid var(--border); border-radius: 4px; color: var(--text); padding: 8px 12px; font-size: 12px; }
+    .receive-box button { background: var(--border); color: var(--text); border: none; border-radius: 4px; padding: 8px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; }
 
-        .subtitle {
-            font-size: 13px;
-            color: #888888;
-            font-weight: normal;
-            margin-left: 6px;
-        }
+    /* フォーム */
+    .input-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; }
+    .input-group { margin-bottom: 16px; }
+    label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 6px; }
+    input[type="text"] { width: 100%; background: #000; border: 1px solid var(--border); border-radius: 6px; color: #fff; padding: 10px; font-size: 14px; }
 
-        .count-badge {
-            font-size: 13px;
-            color: #888888;
-        }
+    /* 星評価バー */
+    .star-scale { display: flex; align-items: center; justify-content: space-between; background: #000; padding: 10px; border-radius: 6px; border: 1px solid var(--border); }
+    .star-btn { background: none; border: none; color: #404040; font-size: 16px; cursor: pointer; transition: color 0.15s; }
+    .star-btn.active { color: var(--text); }
+    .star-btn.platinum.active { color: var(--gold); text-shadow: 0 0 8px var(--gold-glow); }
+    .divider { width: 1px; height: 16px; background: var(--border); margin: 0 4px; }
 
-        .form-card {
-            background-color: #171717;
-            border: 1px solid #262626;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 24px;
-        }
+    .submit-btn { width: 100%; background: var(--text); color: #000; font-weight: 600; border: none; border-radius: 6px; padding: 12px; font-size: 14px; cursor: pointer; margin-top: 12px; }
 
-        .input-group {
-            margin-bottom: 20px;
-        }
+    /* リスト */
+    .controls { display: flex; gap: 8px; margin-bottom: 16px; }
+    .search-input { flex: 1; }
+    .filter-btn { background: var(--card-bg); border: 1px solid var(--border); color: var(--text-dim); padding: 8px 12px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .filter-btn.active { color: var(--gold); border-color: var(--gold); }
 
-        .input-group:last-of-type {
-            margin-bottom: 16px;
-        }
-
-        .label-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-
-        label {
-            display: block;
-            font-size: 13px;
-            color: #a3a3a3;
-            font-weight: 500;
-        }
-
-        .score-display {
-            font-size: 14px;
-            font-weight: 700;
-            color: #ffffff;
-        }
-
-        input[type="text"] {
-            width: 100%;
-            padding: 14px 16px;
-            background-color: #0d0d0d;
-            border: 1px solid #333333;
-            border-radius: 10px;
-            color: #ffffff;
-            font-size: 15px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input[type="text"]:focus {
-            border-color: #ffffff;
-        }
-
-        .star-rating-container {
-            padding: 4px 0;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .star-rating {
-            display: flex;
-            width: 100%;
-            justify-content: space-between;
-            align-items: center;
-            gap: 2px;
-        }
-
-        .star-wrapper {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            cursor: pointer;
-            flex: 1;
-            padding: 4px 0;
-        }
-
-        .star {
-            font-size: 21px;
-            color: #333333;
-            user-select: none;
-            line-height: 1;
-            transition: color 0.15s, transform 0.1s;
-        }
-
-        .star-wrapper.active .star {
-            color: #ffffff;
-        }
-
-        .star-num {
-            font-size: 10px;
-            color: #666666;
-            margin-top: 6px;
-            font-weight: 600;
-            user-select: none;
-        }
-
-        .star-wrapper.active .star-num {
-            color: #ffffff;
-        }
-
-        /* 10と11の間の仕切り線 */
-        .star-divider {
-            width: 1px;
-            height: 32px;
-            background-color: #333333;
-            margin: 0 4px;
-        }
-
-        /* 11番目（入力フォーム）：星は #B6A078 で光る */
-        .star-wrapper.platinum .star {
-            color: #5c4f39;
-        }
-
-        .star-wrapper.platinum.active .star {
-            color: #B6A078;
-            text-shadow: 0 0 10px rgba(182, 160, 120, 0.8), 0 0 20px rgba(182, 160, 120, 0.4);
-        }
-
-        .star-wrapper.platinum.active .star-num {
-            color: #B6A078;
-        }
-
-        .star-wrapper:active .star {
-            transform: scale(1.2);
-        }
-
-        .btn-submit {
-            width: 100%;
-            padding: 14px;
-            background-color: #ffffff;
-            color: #000000;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: opacity 0.2s;
-            margin-top: 4px;
-        }
-
-        .btn-submit:active {
-            opacity: 0.8;
-        }
-
-        .filter-bar {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .search-input {
-            flex: 1;
-        }
-
-        select {
-            padding: 12px 14px;
-            background-color: #171717;
-            border: 1px solid #262626;
-            border-radius: 10px;
-            color: #ffffff;
-            font-size: 14px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        .list-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .item-card {
-            background-color: #171717;
-            border: 1px solid #262626;
-            border-radius: 14px;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: border-color 0.2s, background-color 0.2s;
-        }
-
-        /* 11/10 記録カード：ボックスはシルバー、中の星だけ #B6A078 */
-        .item-card.is-platinum {
-            background: linear-gradient(135deg, #1c1c1e, #141416);
-            border: 1px solid #8e8e93;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-        }
-
-        .item-main {
-            flex: 1;
-            padding-right: 12px;
-            overflow: hidden;
-        }
-
-        .item-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: #ffffff;
-            margin-bottom: 6px;
-            word-break: break-all;
-        }
-
-        .item-date {
-            font-size: 12px;
-            color: #666666;
-        }
-
-        .item-side {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 8px;
-        }
-
-        .score-badge {
-            font-size: 16px;
-            font-weight: 700;
-            color: #ffffff;
-            letter-spacing: 0.5px;
-        }
-
-        /* バッジの星だけ #B6A078 で光らせる */
-        .score-badge.platinum-badge {
-            color: #e5e5e5;
-        }
-
-        .score-badge.platinum-badge .badge-star {
-            color: #B6A078;
-            text-shadow: 0 0 8px rgba(182, 160, 120, 0.8);
-        }
-
-        .btn-delete {
-            background: none;
-            border: none;
-            color: #ef4444;
-            font-size: 12px;
-            cursor: pointer;
-            padding: 2px 4px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 0;
-            color: #555555;
-            font-size: 14px;
-        }
-    </style>
+    .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .card.is-platinum { border-color: rgba(182, 160, 120, 0.4); }
+    .card-title { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+    .card-meta { font-size: 10px; color: var(--text-dim); }
+    .card-score { font-size: 14px; font-weight: 700; color: var(--text); }
+    .card-score.platinum { color: var(--gold); }
+    
+    .card-actions { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+    .action-btn { background: none; border: none; color: var(--text-dim); font-size: 11px; cursor: pointer; text-decoration: underline; }
+  </style>
 </head>
 <body>
 
-    <header>
+<div class="app-container">
+  <header>
+    <h1>TEN</h1>
+    <span class="badge-count" id="totalCount">0 記録</span>
+  </header>
+
+  <!-- 友達からの評価受信用 -->
+  <div class="receive-box">
+    <input type="text" id="receiveInput" placeholder="友達からのシェアコードを貼り付け">
+    <button onclick="receiveSharedItem()">受け取る</button>
+  </div>
+
+  <!-- 入力フォーム -->
+  <div class="input-card">
+    <div class="input-group">
+      <label>評価対象</label>
+      <input type="text" id="itemTitle" placeholder="映画名、レストラン、本など">
+    </div>
+    <div class="input-group">
+      <label>評価 (1 — 11)</label>
+      <div class="star-scale" id="starContainer"></div>
+    </div>
+    <button class="submit-btn" onclick="addRating()">記録する</button>
+  </div>
+
+  <!-- 一覧コントロール -->
+  <div class="controls">
+    <input type="text" class="search-input" id="searchInput" placeholder="検索..." oninput="renderList()">
+    <button class="filter-btn" id="platinumFilter" onclick="togglePlatinumFilter()">11/10のみ</button>
+  </div>
+
+  <!-- 評価一覧 -->
+  <div id="ratingList"></div>
+</div>
+
+<script>
+  let selectedScore = 10;
+  let showPlatinumOnly = false;
+
+  // 初期化
+  document.addEventListener('DOMContentLoaded', () => {
+    initStars();
+    renderList();
+  });
+
+  // 星（1〜11）の表示
+  function initStars() {
+    const container = document.getElementById('starContainer');
+    container.innerHTML = '';
+    for (let i = 1; i <= 11; i++) {
+      if (i === 11) {
+        const div = document.createElement('div');
+        div.className = 'divider';
+        container.appendChild(div);
+      }
+      const btn = document.createElement('button');
+      btn.className = `star-btn ${i === 11 ? 'platinum' : ''} ${i <= selectedScore ? 'active' : ''}`;
+      btn.innerText = '★';
+      btn.onclick = () => { selectedScore = i; initStars(); };
+      container.appendChild(btn);
+    }
+  }
+
+  // データ保存・読み込み
+  function getRatings() { return JSON.parse(localStorage.getItem('ten_ratings') || '[]'); }
+  function saveRatings(data) { localStorage.setItem('ten_ratings', JSON.stringify(data)); }
+
+  // 記録追加
+  function addRating() {
+    const titleInput = document.getElementById('itemTitle');
+    const title = titleInput.value.trim();
+    if (!title) return alert('対象名を入力してください');
+
+    const ratings = getRatings();
+    ratings.unshift({
+      id: Date.now(),
+      title: title,
+      score: selectedScore,
+      date: new Date().toISOString().split('T')[0],
+      isFriend: false
+    });
+
+    saveRatings(ratings);
+    titleInput.value = '';
+    renderList();
+  }
+
+  // アイテムを個別シェア（コード発行）
+  function shareItem(id) {
+    const ratings = getRatings();
+    const item = ratings.find(r => r.id === id);
+    if (!item) return;
+
+    // シェア用オブジェクトを作成
+    const shareData = {
+      title: item.title,
+      score: item.score,
+      from: '友達'
+    };
+
+    const code = btoa(encodeURIComponent(JSON.stringify(shareData)));
+    navigator.clipboard.writeText(code).then(() => {
+      alert(`「${item.title}」の評価コードをコピーしました！LINE等で友達に送ってください。`);
+    });
+  }
+
+  // 友達からのシェアコードを受け取る
+  function receiveSharedItem() {
+    const input = document.getElementById('receiveInput');
+    const code = input.value.trim();
+    if (!code) return;
+
+    try {
+      const decoded = JSON.parse(decodeURIComponent(atob(code)));
+      if (!decoded.title || !decoded.score) throw new Error();
+
+      const ratings = getRatings();
+      ratings.unshift({
+        id: Date.now(),
+        title: `${decoded.title} (${decoded.from}の評価: ${decoded.score}/10)`,
+        score: decoded.score,
+        date: new Date().toISOString().split('T')[0],
+        isFriend: true
+      });
+
+      saveRatings(ratings);
+      input.value = '';
+      alert(`「${decoded.title}」の評価を受け取りました！`);
+      renderList();
+    } catch (e) {
+      alert('無効なコードです。正しいコードを入力してください。');
+    }
+  }
+
+  // 削除
+  function deleteRating(id) {
+    let ratings = getRatings().filter(r => r.id !== id);
+    saveRatings(ratings);
+    renderList();
+  }
+
+  // フィルター切り替え
+  function togglePlatinumFilter() {
+    showPlatinumOnly = !showPlatinumOnly;
+    document.getElementById('platinumFilter').classList.toggle('active', showPlatinumOnly);
+    renderList();
+  }
+
+  // リスト描画
+  function renderList() {
+    const listEl = document.getElementById('ratingList');
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    let ratings = getRatings();
+
+    document.getElementById('totalCount').innerText = `${ratings.length} 記録`;
+
+    if (showPlatinumOnly) ratings = ratings.filter(r => r.score === 11);
+    if (search) ratings = ratings.filter(r => r.title.toLowerCase().includes(search));
+
+    listEl.innerHTML = ratings.map(r => `
+      <div class="card ${r.score === 11 ? 'is-platinum' : ''}">
         <div>
-            <h1>TEN<span class="subtitle">— 評価して、残す。</span></h1>
+          <div class="card-title">${r.title}</div>
+          <div class="card-meta">${r.date} ${r.isFriend ? '• 友達から' : ''}</div>
+          <div class="card-actions">
+            ${!r.isFriend ? `<button class="action-btn" onclick="shareItem(${r.id})">友達に送る</button>` : ''}
+            <button class="action-btn" onclick="deleteRating(${r.id})">削除</button>
+          </div>
         </div>
-        <div class="count-badge" id="totalCount">0 記録</div>
-    </header>
-
-    <div class="form-card">
-        <div class="input-group">
-            <label for="titleInput">評価対象</label>
-            <input type="text" id="titleInput" placeholder="例：ある曲、映画など">
+        <div class="card-score ${r.score === 11 ? 'platinum' : ''}">
+          ${r.score === 11 ? '★ 11/10' : `${r.score} / 10`}
         </div>
-
-        <div class="input-group">
-            <div class="label-row">
-                <label>評価</label>
-                <span class="score-display" id="scoreDisplay">10 / 10</span>
-            </div>
-            <div class="star-rating-container">
-                <div class="star-rating" id="starRating">
-                    <div class="star-wrapper" data-value="1"><span class="star">★</span><span class="star-num">1</span></div>
-                    <div class="star-wrapper" data-value="2"><span class="star">★</span><span class="star-num">2</span></div>
-                    <div class="star-wrapper" data-value="3"><span class="star">★</span><span class="star-num">3</span></div>
-                    <div class="star-wrapper" data-value="4"><span class="star">★</span><span class="star-num">4</span></div>
-                    <div class="star-wrapper" data-value="5"><span class="star">★</span><span class="star-num">5</span></div>
-                    <div class="star-wrapper" data-value="6"><span class="star">★</span><span class="star-num">6</span></div>
-                    <div class="star-wrapper" data-value="7"><span class="star">★</span><span class="star-num">7</span></div>
-                    <div class="star-wrapper" data-value="8"><span class="star">★</span><span class="star-num">8</span></div>
-                    <div class="star-wrapper" data-value="9"><span class="star">★</span><span class="star-num">9</span></div>
-                    <div class="star-wrapper" data-value="10"><span class="star">★</span><span class="star-num">10</span></div>
-                    <!-- 10と11の間の仕切り線 -->
-                    <div class="star-divider"></div>
-                    <!-- 11番目：#B6A078 で光る星 -->
-                    <div class="star-wrapper platinum" data-value="11"><span class="star">★</span><span class="star-num">11</span></div>
-                </div>
-            </div>
-        </div>
-
-        <button class="btn-submit" id="saveBtn">記録する</button>
-    </div>
-
-    <div class="filter-bar">
-        <input type="text" id="searchInput" class="search-input" placeholder="対象名で検索...">
-        <select id="sortSelect">
-            <option value="desc">新しい順</option>
-            <option value="asc">古い順</option>
-            <option value="platinum-only">★11/10</option>
-            <option value="score-desc">評価が高い順</option>
-            <option value="score-asc">評価が低い順</option>
-        </select>
-    </div>
-
-    <div class="list-container" id="recordList"></div>
-
-    <script>
-        let currentScore = 10;
-        let records = JSON.parse(localStorage.getItem('ten_app_records') || '[]');
-
-        const starRating = document.getElementById('starRating');
-        const starWrappers = starRating.querySelectorAll('.star-wrapper');
-        const scoreDisplay = document.getElementById('scoreDisplay');
-        const titleInput = document.getElementById('titleInput');
-        const saveBtn = document.getElementById('saveBtn');
-        const recordList = document.getElementById('recordList');
-        const totalCount = document.getElementById('totalCount');
-        const searchInput = document.getElementById('searchInput');
-        const sortSelect = document.getElementById('sortSelect');
-
-        function updateStars(val) {
-            currentScore = val;
-            if (val === 11) {
-                scoreDisplay.textContent = '11 / 10';
-            } else {
-                scoreDisplay.textContent = `${val} / 10`;
-            }
-
-            starWrappers.forEach(wrapper => {
-                const starVal = parseInt(wrapper.getAttribute('data-value'));
-                if (val === 11) {
-                    if (starVal === 11) {
-                        wrapper.classList.add('active');
-                    } else {
-                        wrapper.classList.remove('active');
-                    }
-                } else {
-                    if (starVal <= val && starVal !== 11) {
-                        wrapper.classList.add('active');
-                    } else {
-                        wrapper.classList.remove('active');
-                    }
-                }
-            });
-        }
-
-        updateStars(10);
-
-        starWrappers.forEach(wrapper => {
-            wrapper.addEventListener('click', () => {
-                const val = parseInt(wrapper.getAttribute('data-value'));
-                updateStars(val);
-            });
-        });
-
-        saveBtn.addEventListener('click', () => {
-            const title = titleInput.value.trim();
-            if (!title) {
-                alert('対象名を入力してください');
-                return;
-            }
-
-            const newRecord = {
-                id: Date.now(),
-                title: title,
-                score: currentScore,
-                date: new Date().toISOString().split('T')[0]
-            };
-
-            records.unshift(newRecord);
-            saveRecords();
-            titleInput.value = '';
-            updateStars(10);
-            renderRecords();
-        });
-
-        function saveRecords() {
-            localStorage.setItem('ten_app_records', JSON.stringify(records));
-        }
-
-        function deleteRecord(id) {
-            if (confirm('この記録を削除しますか？')) {
-                records = records.filter(r => r.id !== id);
-                saveRecords();
-                renderRecords();
-            }
-        }
-
-        function renderRecords() {
-            let filtered = records.filter(r => 
-                r.title.toLowerCase().includes(searchInput.value.toLowerCase())
-            );
-
-            const sortVal = sortSelect.value;
-            if (sortVal === 'platinum-only') {
-                filtered = filtered.filter(r => r.score === 11);
-            } else if (sortVal === 'desc') {
-                filtered.sort((a, b) => b.id - a.id);
-            } else if (sortVal === 'asc') {
-                filtered.sort((a, b) => a.id - b.id);
-            } else if (sortVal === 'score-desc') {
-                filtered.sort((a, b) => b.score - a.score);
-            } else if (sortVal === 'score-asc') {
-                filtered.sort((a, b) => b.score - a.score); // 修正：score-asc
-            }
-
-            // 正しいソート処理
-            if (sortVal === 'platinum-only') {
-                filtered = records.filter(r => r.score === 11 && r.title.toLowerCase().includes(searchInput.value.toLowerCase()));
-            } else if (sortVal === 'desc') {
-                filtered.sort((a, b) => b.id - a.id);
-            } else if (sortVal === 'asc') {
-                filtered.sort((a, b) => a.id - b.id);
-            } else if (sortVal === 'score-desc') {
-                filtered.sort((a, b) => b.score - a.score);
-            } else if (sortVal === 'score-asc') {
-                filtered.sort((a, b) => a.score - b.score);
-            }
-
-            totalCount.textContent = `${records.length} 記録`;
-
-            if (filtered.length === 0) {
-                recordList.innerHTML = '<div class="empty-state">記録はありません</div>';
-                return;
-            }
-
-            recordList.innerHTML = filtered.map(r => {
-                const isPlatinum = r.score === 11;
-                const scoreText = isPlatinum ? '<span class="badge-star">★</span> 11/10' : `★ ${r.score}/10`;
-                const cardClass = isPlatinum ? 'item-card is-platinum' : 'item-card';
-                const badgeClass = isPlatinum ? 'score-badge platinum-badge' : 'score-badge';
-
-                return `
-                    <div class="${cardClass}">
-                        <div class="item-main">
-                            <div class="item-title">${escapeHtml(r.title)}</div>
-                            <div class="item-date">${r.date}</div>
-                        </div>
-                        <div class="item-side">
-                            <div class="${badgeClass}">${scoreText}</div>
-                            <button class="btn-delete" onclick="deleteRecord(${r.id})">削除</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function escapeHtml(str) {
-            return str.replace(/[&<>"']/g, function(m) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#039;'
-                }[m];
-            });
-        }
-
-        searchInput.addEventListener('input', renderRecords);
-        sortSelect.addEventListener('change', renderRecords);
-
-        renderRecords();
-    </script>
+      </div>
+    `).join('');
+  }
+</script>
 </body>
 </html>
