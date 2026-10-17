@@ -60,6 +60,7 @@
     .btn-group { display: flex; gap: 8px; margin-top: 16px; }
     .submit-btn { flex: 1; background: var(--text); color: #000; font-weight: 600; border: none; border-radius: 6px; padding: 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
     .share-btn { flex: 1; background: transparent; color: var(--text); border: 1px solid var(--border); font-weight: 600; border-radius: 6px; padding: 12px; font-size: 13px; cursor: pointer; white-space: nowrap; }
+    .reject-btn { background: transparent; color: #ff5555; border: 1px solid #442222; font-weight: 600; border-radius: 6px; padding: 6px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; }
 
     /* 検索・並び替えバー */
     .control-bar { display: flex; gap: 8px; margin-bottom: 16px; }
@@ -409,7 +410,7 @@
     const url = document.getElementById('itemUrl').value.trim();
     if (!title && !url) return alert('曲名/アーティスト名、または楽曲URLのいずれかを入力してください');
 
-    const displayTitle = title || '無題の曲';
+    const displayTitle = title || url;
 
     const ratings = getRatings();
     ratings.unshift({
@@ -523,7 +524,7 @@
     const url = document.getElementById('sendTopicUrlInput').value.trim();
     if (!title && !url) return alert('曲名/アーティスト名、または楽曲URLのいずれかを入力してください');
 
-    const displayTitle = title || '無題の曲';
+    const displayTitle = title || url;
     const topicId = 'topic_' + Date.now();
     const targetName = getFriendName(friendId);
     
@@ -576,9 +577,13 @@
         window.dbOnValue(replyRef, (snapshot) => {
           const reply = snapshot.val();
           if (reply) {
-            r.friendScore = reply.friendScore;
-            r.memo = reply.memo || '';
-            r.status = 'complete';
+            if (reply.rejected) {
+              r.status = 'rejected';
+            } else {
+              r.friendScore = reply.friendScore;
+              r.memo = reply.memo || '';
+              r.status = 'complete';
+            }
             saveRatings(ratings);
             renderList();
             window.dbRemove(replyRef);
@@ -602,13 +607,31 @@
             <div class="card-meta">差出人: ${item.fromName || item.fromId}</div>
             ${getMusicLinkHtml(item.url)}
           </div>
-          <button class="submit-btn" style="flex: none; width: auto; padding: 6px 16px; font-size: 12px; height: fit-content;" onclick='openEvalModal(${JSON.stringify(item)})'>評価する</button>
+          <div style="display: flex; gap: 6px; flex: none; align-items: center;">
+            <button class="submit-btn" style="flex: none; width: auto; padding: 6px 14px; font-size: 12px;" onclick='openEvalModal(${JSON.stringify(item)})'>評価する</button>
+            <button class="reject-btn" onclick='rejectInboxItem(${JSON.stringify(item)})'>拒否</button>
+          </div>
         </div>
       `).join('');
     } else {
       countEl.style.display = 'none';
       listEl.innerHTML = '<p style="text-align: center; color: var(--text-dim); font-size: 13px; padding: 20px;">届いたお題はありません</p>';
     }
+  }
+
+  function rejectInboxItem(item) {
+    if (!confirm(`「${item.title}」のお題を拒否しますか？`)) return;
+
+    const replyRef = window.dbRef(window.db, `replies/${item.fromId}/${item.topicId}`);
+    window.dbSet(replyRef, { 
+      rejected: true
+    }).then(() => {
+      const inboxRef = window.dbRef(window.db, `inbox/${myId}/${item.topicId}`);
+      window.dbRemove(inboxRef);
+      alert('お題を拒否しました。');
+    }).catch((error) => {
+      alert('処理に失敗しました: ' + error.message);
+    });
   }
 
   function openEvalModal(item) {
@@ -705,13 +728,18 @@
 
     listEl.innerHTML = ratings.map(r => {
       const targetNameDisplay = r.targetName || r.targetFriend || '相手';
+      let statusMeta = r.date;
+      if (r.status === 'waiting') {
+        statusMeta = `<span style="color:var(--text);">⏳ ${targetNameDisplay}の評価待ち...</span>`;
+      } else if (r.status === 'rejected') {
+        statusMeta = `<span style="color:#ff5555;">❌ ${targetNameDisplay}に拒否されました</span>`;
+      }
+
       return `
         <div class="card ${r.myScore === 11 || r.friendScore === 11 ? 'is-platinum' : ''}">
           <div style="flex: 1; min-width: 0;">
             <div class="card-title">${r.title}</div>
-            <div class="card-meta">
-              ${r.status === 'waiting' ? `<span style="color:var(--text);">⏳ ${targetNameDisplay}の評価待ち...</span>` : r.date}
-            </div>
+            <div class="card-meta">${statusMeta}</div>
             ${getMusicLinkHtml(r.url)}
             ${r.memo ? `<div class="card-memo">“${r.memo}”</div>` : ''}
             <div><button class="action-btn" onclick="deleteRating('${r.id}')">削除</button></div>
